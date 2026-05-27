@@ -7,7 +7,7 @@ describe('store / db', () => {
   it('opens an in-memory database with migrations applied', () => {
     const db = openStore({ path: ':memory:', noWal: true });
     try {
-      expect(appliedMigrationVersions(db)).toEqual([1]);
+      expect(appliedMigrationVersions(db)).toEqual([1, 2]);
       const tables = db
         .prepare(
           "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",

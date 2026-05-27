@@ -97,7 +97,34 @@ const MIGRATION_001: Migration = {
   `,
 };
 
-const MIGRATIONS: readonly Migration[] = [MIGRATION_001];
+/**
+ * Migration 002 — FTS5 search index plus denormalized filter columns on
+ * `advisories` (severity, has_fix, known_exploited). The columns are populated
+ * by the search-index module's `indexAdvisory` and queried alongside FTS5
+ * matches so search results can be filtered without parsing merged_json.
+ */
+const MIGRATION_002: Migration = {
+  version: 2,
+  name: '002_search_index',
+  up: `
+    ALTER TABLE advisories ADD COLUMN severity        TEXT;
+    ALTER TABLE advisories ADD COLUMN has_fix         INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE advisories ADD COLUMN known_exploited INTEGER NOT NULL DEFAULT 0;
+
+    CREATE INDEX idx_advisories_search_filters
+      ON advisories(known_exploited, has_fix, severity);
+
+    CREATE VIRTUAL TABLE advisory_fts USING fts5(
+      id UNINDEXED,
+      title,
+      description,
+      aliases,
+      tokenize = 'porter unicode61'
+    );
+  `,
+};
+
+const MIGRATIONS: readonly Migration[] = [MIGRATION_001, MIGRATION_002];
 
 export function runMigrations(db: Database): void {
   db.exec(`
