@@ -47,7 +47,8 @@ pnpm --filter advisory-mcp test:integration
 ## Architecture
 
 ```text
-fixtures/network → sync engine → merge → SQLite → MCP tools (read-only, offline)
-````
+bundled fixtures → source adapters → sync engine → merge → SQLite → MCP tools (read-only, offline)
+```
 
 MCP tool calls never perform arbitrary network I/O.
+````

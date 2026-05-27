@@ -8,6 +8,7 @@ import {
   sourceStatusPayload,
 } from '../store/repositories/source-state-repository.js';
 
+import { GOLDEN_ADVISORY_IDS } from './constants.js';
 import {
   PROMPT_NAMES,
   buildPatchBriefPrompt,
@@ -15,6 +16,7 @@ import {
   buildSbomRiskReviewPrompt,
   buildTriageAdvisoryPrompt,
 } from './prompts.js';
+import { toolResult } from './register-tools.js';
 import {
   RISK_PROFILE_NAMES,
   readAdvisoryResource,
@@ -40,15 +42,6 @@ export const SERVER_VERSION = '0.1.0';
 export interface CreateMcpServerOptions {
   store: AdvisoryStore;
   requireInitialized?: boolean;
-}
-
-function toolResult(markdown: string, structured: unknown) {
-  return {
-    content: [
-      { type: 'text' as const, text: markdown },
-      { type: 'text' as const, text: JSON.stringify(structured, null, 2) },
-    ],
-  };
 }
 
 export function createMcpServer(options: CreateMcpServerOptions): McpServer {
@@ -198,7 +191,7 @@ export function createMcpServer(options: CreateMcpServerOptions): McpServer {
     },
   );
 
-  for (const goldenId of ['CVE-2021-44228', 'CVE-2024-3094', 'CVE-2023-34362']) {
+  for (const goldenId of GOLDEN_ADVISORY_IDS) {
     server.registerResource(
       `advisory-${goldenId}`,
       RESOURCE_URIS.advisoryById(goldenId),

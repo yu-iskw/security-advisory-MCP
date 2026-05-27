@@ -1,4 +1,5 @@
 import { advisorySchema } from '../../schemas/advisory.js';
+import { readNumberColumn, readStringColumn } from '../sql-rows.js';
 
 import type { Advisory } from '../../schemas/advisory.js';
 import type { AdvisoryStore } from '../db.js';
@@ -85,18 +86,52 @@ export function upsertAdvisory(store: AdvisoryStore, advisory: Advisory): void {
     );
 }
 
+function parseAdvisoryRow(row: unknown): Advisory {
+  const mergedJson = readStringColumn(row, 'merged_json');
+  return advisorySchema.parse(JSON.parse(mergedJson));
+}
+
 export function findAdvisoryById(store: AdvisoryStore, id: string): Advisory | null {
   const aliasRow = store.db
     .prepare('SELECT advisory_id FROM aliases WHERE alias = ? COLLATE NOCASE')
-    .get(id) as { advisory_id: string } | undefined;
-  const advisoryId = aliasRow?.advisory_id ?? id;
-  const row = store.db
-    .prepare('SELECT merged_json FROM advisories WHERE id = ?')
-    .get(advisoryId) as { merged_json: string } | undefined;
+    .get(id);
+  const advisoryId = aliasRow ? readStringColumn(aliasRow, 'advisory_id') : id;
+  const row = store.db.prepare('SELECT merged_json FROM advisories WHERE id = ?').get(advisoryId);
   if (!row) {
     return null;
   }
-  return advisorySchema.parse(JSON.parse(row.merged_json));
+  return parseAdvisoryRow(row);
+}
+
+export function listAdvisoryIdsForPackage(
+  store: AdvisoryStore,
+  ecosystem: string,
+  name: string,
+): string[] {
+  const rows = store.db
+    .prepare(
+      `SELECT DISTINCT advisory_id FROM affected_packages
+       WHERE ecosystem = ? AND name = ? COLLATE NOCASE`,
+    )
+    .all(ecosystem, name);
+  return rows.map((row) => readStringColumn(row, 'advisory_id'));
+}
+
+export function findAdvisoriesByIds(store: AdvisoryStore, ids: string[]): Map<string, Advisory> {
+  const unique = [...new Set(ids)];
+  const map = new Map<string, Advisory>();
+  if (unique.length === 0) {
+    return map;
+  }
+  const placeholders = unique.map(() => '?').join(',');
+  const rows = store.db
+    .prepare(`SELECT id, merged_json FROM advisories WHERE id IN (${placeholders})`)
+    .all(...unique);
+  for (const row of rows) {
+    const id = readStringColumn(row, 'id');
+    map.set(id, parseAdvisoryRow(row));
+  }
+  return map;
 }
 
 export function searchAdvisories(store: AdvisoryStore, query: string, limit: number): Advisory[] {
@@ -108,10 +143,11 @@ export function searchAdvisories(store: AdvisoryStore, query: string, limit: num
        WHERE advisory_fts MATCH ?
        LIMIT ?`,
     )
-    .all(query.replace(/[^\w\-@.]+/g, ' '), limit) as Array<{ merged_json: string }>;
-  return rows.map((r) => advisorySchema.parse(JSON.parse(r.merged_json)));
+    .all(query.replace(/[^\w\-@.]+/g, ' '), limit);
+  return rows.map((r) => parseAdvisoryRow(r));
 }
 
 export function countAdvisories(store: AdvisoryStore): number {
-  return (store.db.prepare('SELECT COUNT(*) AS c FROM advisories').get() as { c: number }).c;
+  const row = store.db.prepare('SELECT COUNT(*) AS c FROM advisories').get();
+  return readNumberColumn(row, 'c');
 }

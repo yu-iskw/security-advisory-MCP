@@ -224,12 +224,39 @@ export default [
     },
   },
   {
-    files: ['packages/advisory-mcp/**/*.ts'],
+    files: [
+      'packages/advisory-mcp/src/cli/**/*.ts',
+      'packages/advisory-mcp/src/sources/**/*.ts',
+      'packages/advisory-mcp/src/util/config.ts',
+      'packages/advisory-mcp/src/store/db.ts',
+      'packages/advisory-mcp/src/ingest/sync-engine.ts',
+    ],
     rules: {
-      // Paths are validated via path-policy / config before filesystem access.
       'security/detect-non-literal-fs-filename': 'off',
+    },
+  },
+  {
+    files: [
+      'packages/advisory-mcp/src/schemas/purl.ts',
+      'packages/advisory-mcp/src/security/content-sanitizer.ts',
+    ],
+    rules: {
       'security/detect-unsafe-regex': 'off',
+    },
+  },
+  {
+    files: [
+      'packages/advisory-mcp/src/store/db.ts',
+      'packages/advisory-mcp/src/cli/commands/doctor.ts',
+    ],
+    rules: {
       'import-x/no-named-as-default': 'off',
+    },
+  },
+  {
+    files: ['packages/advisory-mcp/src/store/sql-rows.ts'],
+    rules: {
+      'security/detect-object-injection': 'off',
     },
   },
 ];

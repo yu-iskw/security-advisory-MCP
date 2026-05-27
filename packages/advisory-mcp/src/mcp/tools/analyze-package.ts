@@ -1,10 +1,6 @@
 import { z } from 'zod';
 
-import { parsePurl } from '../../schemas/purl.js';
-import {
-  findAdvisoryById,
-  searchAdvisories,
-} from '../../store/repositories/advisory-repository.js';
+import { analyzePackageCoordinate, coordinateFromInput } from './package-analysis.js';
 
 import type { AdvisoryStore } from '../../store/db.js';
 
@@ -27,59 +23,33 @@ export function runAnalyzePackage(
   store: AdvisoryStore,
   input: z.infer<typeof analyzePackageInputSchema>,
 ) {
-  const parsed = input.purl ? parsePurl(input.purl) : null;
-  const ecosystem = parsed?.type ?? input.ecosystem ?? 'unknown';
-  const name = parsed?.name ?? input.name ?? 'unknown';
-  const version = parsed?.version ?? input.version;
-
-  const rows = store.db
-    .prepare(
-      `SELECT DISTINCT advisory_id FROM affected_packages
-       WHERE ecosystem = ? AND name = ? COLLATE NOCASE`,
-    )
-    .all(ecosystem, name) as Array<{ advisory_id: string }>;
-
-  const findings = [];
-  for (const row of rows) {
-    const advisory = findAdvisoryById(store, row.advisory_id);
-    if (!advisory) {
-      continue;
-    }
-    if (!input.includeMaliciousPackageReports && advisory.type === 'malicious-package') {
-      continue;
-    }
-    const vulnerable = version
-      ? advisory.affected.some((p) => p.vulnerableRanges.length > 0)
-      : true;
-    findings.push({
-      advisoryId: advisory.canonicalId,
-      title: advisory.title,
-      vulnerable,
-      fixedVersions: advisory.affected.flatMap((p) => p.fixedVersions),
-    });
-  }
-
-  if (findings.length === 0) {
-    const fallback = searchAdvisories(store, name, 5);
-    for (const adv of fallback) {
-      findings.push({
-        advisoryId: adv.canonicalId,
-        title: adv.title,
-        vulnerable: true,
-        fixedVersions: [],
-      });
-    }
-  }
+  const coordinate = coordinateFromInput(input);
+  const analysis = analyzePackageCoordinate(store, coordinate, {
+    includeMaliciousPackageReports: input.includeMaliciousPackageReports,
+  });
 
   const markdown = [
-    `# Package analysis: ${ecosystem}/${name}${version ? `@${version}` : ''}`,
+    `# Package analysis: ${analysis.ecosystem}/${analysis.name}${analysis.version ? `@${analysis.version}` : ''}`,
     '',
-    findings.length === 0
-      ? 'No matching advisories in local database.'
-      : findings
+    analysis.findings.length === 0
+      ? 'No matching advisories in local database (affected_packages).'
+      : analysis.findings
           .map((f) => `- ${f.advisoryId}: ${f.title ?? 'untitled'} (vulnerable=${f.vulnerable})`)
           .join('\n'),
+    analysis.uncertainty.length > 0
+      ? `\n## Uncertainty\n${analysis.uncertainty.map((u) => `- ${u}`).join('\n')}`
+      : '',
   ].join('\n');
 
-  return { structured: { ecosystem, name, version, findings, profile: input.profile }, markdown };
+  return {
+    structured: {
+      ecosystem: analysis.ecosystem,
+      name: analysis.name,
+      version: analysis.version,
+      findings: analysis.findings,
+      uncertainty: analysis.uncertainty,
+      profile: input.profile,
+    },
+    markdown,
+  };
 }

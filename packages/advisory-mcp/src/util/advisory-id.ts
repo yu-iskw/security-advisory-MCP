@@ -1,3 +1,5 @@
+import type { Advisory } from '../schemas/advisory.js';
+
 const CVE_PATTERN = /^CVE-\d{4}-\d{4,}$/i;
 const GHSA_PATTERN = /^GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/i;
 const OSV_PATTERN = /^(GO|PYSEC|RUSTSEC|GHSA|CVE)-/i;
@@ -40,4 +42,24 @@ export function selectCanonicalId(ids: string[]): string {
     return osv;
   }
   return ids[0] ?? 'UNKNOWN';
+}
+
+export function inferAdvisoryType(
+  canonicalId: string,
+  hints: { explicitType?: Advisory['type']; isMaliciousPackage?: boolean },
+): Advisory['type'] {
+  if (hints.isMaliciousPackage || hints.explicitType === 'malicious-package') {
+    return 'malicious-package';
+  }
+  const classified = classifyAdvisoryId(canonicalId);
+  if (classified === 'cve') {
+    return 'cve';
+  }
+  if (classified === 'ghsa') {
+    return 'ghsa';
+  }
+  if (classified === 'osv') {
+    return 'osv';
+  }
+  return 'other';
 }

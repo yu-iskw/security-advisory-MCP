@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { parseSbomComponents } from '../../schemas/sbom.js';
 import { DEFAULT_MAX_SBOM_BYTES } from '../../security/limits.js';
 
-import { runAnalyzePackage } from './analyze-package.js';
+import { analyzePackageCoordinates } from './package-analysis.js';
 
 import type { AdvisoryStore } from '../../store/db.js';
 
@@ -25,23 +25,30 @@ export function runScanSbom(store: AdvisoryStore, input: z.infer<typeof scanSbom
   }
   components = components.slice(0, input.limit);
 
+  const coordinates = components.map((component) => ({
+    key: `${component.ecosystem ?? 'generic'}|${component.name}|${component.version ?? ''}`,
+    ecosystem: component.ecosystem ?? 'generic',
+    name: component.name,
+    version: component.version,
+  }));
+
+  const analyses = analyzePackageCoordinates(store, coordinates, {
+    includeMaliciousPackageReports: true,
+  });
+
   const findings = [];
   for (const component of components) {
-    const result = runAnalyzePackage(store, {
-      purl: component.purl,
-      ecosystem: component.ecosystem ?? 'generic',
-      name: component.name,
-      version: component.version,
-      includeMaliciousPackageReports: true,
-      profile: input.profile,
-    });
-    if (result.structured.findings.length > 0) {
-      findings.push({
-        component: component.name,
-        version: component.version,
-        findings: result.structured.findings,
-      });
+    const key = `${component.ecosystem ?? 'generic'}|${component.name}|${component.version ?? ''}`;
+    const analysis = analyses.get(key);
+    if (!analysis || analysis.findings.length === 0) {
+      continue;
     }
+    findings.push({
+      component: component.name,
+      version: component.version,
+      findings: analysis.findings,
+      uncertainty: analysis.uncertainty,
+    });
   }
 
   const markdown = [

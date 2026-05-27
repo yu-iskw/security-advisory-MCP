@@ -13,11 +13,17 @@ export async function serveHttp(port: number): Promise<void> {
       }),
     );
   });
+
   await new Promise<void>((resolve) => {
     httpServer.listen(port, () => resolve());
   });
   process.stderr.write(`advisory-mcp HTTP stub listening on :${port} (use stdio for MCP)\n`);
-  await new Promise(() => {
-    /* keep process alive */
+
+  await new Promise<void>((resolve) => {
+    const shutdown = () => {
+      httpServer.close(() => resolve());
+    };
+    process.once('SIGINT', shutdown);
+    process.once('SIGTERM', shutdown);
   });
 }

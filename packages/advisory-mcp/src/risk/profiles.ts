@@ -10,6 +10,15 @@ export interface ProfileWeights {
   evidenceConfidence: number;
 }
 
+export const RISK_PROFILE_NAMES = [
+  'default',
+  'internet_exposed',
+  'application_dependency',
+  'container_image',
+  'executive',
+  'research',
+] as const satisfies readonly RiskProfileName[];
+
 export const PROFILE_WEIGHTS: Record<RiskProfileName, ProfileWeights> = {
   default: {
     knownExploitation: 0.25,

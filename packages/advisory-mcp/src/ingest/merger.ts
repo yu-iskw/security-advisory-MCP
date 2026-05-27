@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { classifyAdvisoryId, normalizeAdvisoryId, selectCanonicalId } from '../util/advisory-id.js';
+import { inferAdvisoryType, normalizeAdvisoryId, selectCanonicalId } from '../util/advisory-id.js';
 
 import type { Advisory, AffectedPackage, EvidenceConflict } from '../schemas/advisory.js';
 import type { Evidence } from '../schemas/evidence.js';
@@ -87,26 +87,13 @@ function accumulateRecords(group: NormalizedRecord[]): MergeAccumulator {
   return acc;
 }
 
-function resolveMergedType(canonicalId: string, group: NormalizedRecord[]): Advisory['type'] {
-  if (group.some((g) => (g.advisory as { type?: string }).type === 'malicious-package')) {
-    return 'malicious-package';
-  }
-  const classified = classifyAdvisoryId(canonicalId);
-  if (classified === 'cve') {
-    return 'cve';
-  }
-  if (classified === 'ghsa') {
-    return 'ghsa';
-  }
-  if (classified === 'osv') {
-    return 'osv';
-  }
-  return 'other';
-}
-
 function mergeGroup(canonicalId: string, group: NormalizedRecord[]): Advisory {
   const acc = accumulateRecords(group);
-  const type = resolveMergedType(canonicalId, group);
+  const type = inferAdvisoryType(canonicalId, {
+    isMaliciousPackage: group.some(
+      (g) => (g.advisory as { type?: string }).type === 'malicious-package',
+    ),
+  });
   const conflicts = detectVersionConflicts(acc.affected);
 
   return {

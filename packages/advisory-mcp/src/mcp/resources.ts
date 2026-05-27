@@ -1,4 +1,4 @@
-import { getProfileWeights, PROFILE_WEIGHTS } from '../risk/profiles.js';
+import { getProfileWeights, RISK_PROFILE_NAMES } from '../risk/profiles.js';
 import { computeRiskScore } from '../risk/score.js';
 import { advisorySchema } from '../schemas/advisory.js';
 import { evidenceSchema } from '../schemas/evidence.js';
@@ -20,7 +20,7 @@ export const RESOURCE_URIS = {
   evidenceSchema: 'advisory://schema/evidence',
 } as const;
 
-export const RISK_PROFILE_NAMES = Object.keys(PROFILE_WEIGHTS) as RiskProfileName[];
+export { RISK_PROFILE_NAMES };
 
 export function readSourceStatusResource(store: AdvisoryStore) {
   const summary = buildSourceStatusSummary(store, { includeDisabled: true });

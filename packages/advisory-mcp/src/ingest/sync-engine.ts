@@ -11,8 +11,8 @@ import { logEvent } from '../util/logger.js';
 import { hashPayload, mergeRecords } from './merger.js';
 
 import type { NormalizedRecord } from './merger.js';
-import type { SyncPreset } from '../schemas/source.js';
-import type { SyncSourceResult } from '../sources/source.js';
+import type { SourceId, SourceStatus, SyncPreset } from '../schemas/source.js';
+import type { SourceDefinition, SyncSourceResult } from '../sources/source.js';
 import type { AdvisoryStore } from '../store/db.js';
 
 export interface SyncEngineOptions {
@@ -31,16 +31,30 @@ export interface SyncEngineResult {
 export function runSyncEngine(options: SyncEngineOptions): SyncEngineResult {
   const started = Date.now();
   const sources = sourcesForPreset(options.preset);
+  const { sourceResults, records } = collectRecordsFromSources(options, sources);
+  const advisoriesUpserted = persistMergedRecords(options.store, records);
+  return {
+    preset: options.preset,
+    sources: sourceResults,
+    advisoriesUpserted,
+    durationMs: Date.now() - started,
+  };
+}
+
+function collectRecordsFromSources(
+  options: SyncEngineOptions,
+  sources: SourceDefinition[],
+): { sourceResults: SyncSourceResult[]; records: NormalizedRecord[] } {
   const sourceResults: SyncSourceResult[] = [];
-  const allRecords: NormalizedRecord[] = [];
+  const records: NormalizedRecord[] = [];
 
   for (const source of sources) {
     const sourceStarted = Date.now();
     try {
       updateSourceState(options.store, source.id, 'syncing', options.preset);
-      const records = loadFixtureRecords(options.fixtureRoot, source);
-      allRecords.push(...records);
-      for (const record of records) {
+      const loaded = loadFixtureRecords(options.fixtureRoot, source);
+      records.push(...loaded);
+      for (const record of loaded) {
         const payload = Buffer.from(JSON.stringify(record.evidence.normalizedJson));
         storeRawRecord(options.store, {
           id: record.evidence.rawRef ?? hashPayload(payload),
@@ -53,20 +67,20 @@ export function runSyncEngine(options: SyncEngineOptions): SyncEngineResult {
       }
       updateSourceState(options.store, source.id, 'ok', options.preset, {
         completed: true,
-        records: records.length,
+        records: loaded.length,
       });
       logEvent({
         level: 'info',
         event: 'source_sync_completed',
         source: source.id,
-        recordsProcessed: records.length,
-        recordsChanged: records.length,
+        recordsProcessed: loaded.length,
+        recordsChanged: loaded.length,
         durationMs: Date.now() - sourceStarted,
       });
       sourceResults.push({
         source: source.id,
-        recordsProcessed: records.length,
-        recordsChanged: records.length,
+        recordsProcessed: loaded.length,
+        recordsChanged: loaded.length,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -80,30 +94,28 @@ export function runSyncEngine(options: SyncEngineOptions): SyncEngineResult {
     }
   }
 
-  const merged = mergeRecords(allRecords);
-  const mergeTx = options.store.db.transaction(() => {
+  return { sourceResults, records };
+}
+
+function persistMergedRecords(store: AdvisoryStore, records: NormalizedRecord[]): number {
+  const merged = mergeRecords(records);
+  const mergeTx = store.db.transaction(() => {
     for (const advisory of merged) {
-      upsertAdvisory(options.store, advisory);
+      upsertAdvisory(store, advisory);
     }
-    for (const record of allRecords) {
-      upsertEvidence(options.store, record.evidence);
+    for (const record of records) {
+      upsertEvidence(store, record.evidence);
     }
   });
   mergeTx();
-
-  return {
-    preset: options.preset,
-    sources: sourceResults,
-    advisoriesUpserted: merged.length,
-    durationMs: Date.now() - started,
-  };
+  return merged.length;
 }
 
 function updateSourceState(
   store: AdvisoryStore,
-  source: string,
-  status: string,
-  preset: string,
+  source: SourceId,
+  status: SourceStatus,
+  preset: SyncPreset,
   extra?: { completed?: boolean; records?: number; error?: string },
 ): void {
   const now = new Date().toISOString();
