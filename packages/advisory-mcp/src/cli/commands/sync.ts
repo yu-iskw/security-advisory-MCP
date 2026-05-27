@@ -6,6 +6,7 @@ import { CISA_KEV_HOST, CisaKevSource } from '../../sources/cisa-kev.js';
 import { CISA_VULNRICHMENT_HOST, CisaVulnrichmentSource } from '../../sources/cisa-vulnrichment.js';
 import { CVEPROJECT_HOST, CveProjectSource } from '../../sources/cveproject.js';
 import { FIRST_EPSS_HOST, FirstEpssSource } from '../../sources/first-epss.js';
+import { NVD_HOST, NvdFeedsSource } from '../../sources/nvd-feeds.js';
 import { SourceRegistry } from '../../sources/registry.js';
 import { openStore, closeStore } from '../../store/db.js';
 import { createLogger } from '../../util/logger.js';
@@ -48,6 +49,7 @@ export async function runSync(options: SyncOptions): Promise<void> {
       FIRST_EPSS_HOST,
       CISA_VULNRICHMENT_HOST,
       CVEPROJECT_HOST,
+      NVD_HOST,
     ],
   });
   const downloader = new HttpsDownloader(policy);
@@ -64,6 +66,9 @@ export async function runSync(options: SyncOptions): Promise<void> {
   }
   if (config.sources.cveproject?.enabled) {
     registry.register(new CveProjectSource());
+  }
+  if (config.sources['nvd-feed']?.enabled) {
+    registry.register(new NvdFeedsSource());
   }
 
   const adapters = registry.resolvePreset(options.preset);
