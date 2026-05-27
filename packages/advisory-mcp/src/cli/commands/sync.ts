@@ -3,6 +3,7 @@ import { HttpsDownloader } from '../../ingest/downloader.js';
 import { SyncEngine } from '../../ingest/sync-engine.js';
 import { UrlPolicy } from '../../security/url-policy.js';
 import { CISA_KEV_HOST, CisaKevSource } from '../../sources/cisa-kev.js';
+import { FIRST_EPSS_HOST, FirstEpssSource } from '../../sources/first-epss.js';
 import { SourceRegistry } from '../../sources/registry.js';
 import { openStore, closeStore } from '../../store/db.js';
 import { createLogger } from '../../util/logger.js';
@@ -38,13 +39,16 @@ export async function runSync(options: SyncOptions): Promise<void> {
   const config = await loadConfig({ configPath: options.config });
   const logger = createLogger({ level: config.logLevel });
 
-  // Allowlisted hosts grow as adapters are added. M7 only registers KEV.
-  const policy = new UrlPolicy({ allowedHosts: [CISA_KEV_HOST] });
+  // Allowlisted hosts grow as adapters are added.
+  const policy = new UrlPolicy({ allowedHosts: [CISA_KEV_HOST, FIRST_EPSS_HOST] });
   const downloader = new HttpsDownloader(policy);
 
   const registry = new SourceRegistry();
   if (config.sources['cisa-kev']?.enabled) {
     registry.register(new CisaKevSource());
+  }
+  if (config.sources['first-epss']?.enabled) {
+    registry.register(new FirstEpssSource());
   }
 
   const adapters = registry.resolvePreset(options.preset);
