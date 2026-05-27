@@ -1,6 +1,7 @@
 import { AdvisoryRepository } from '../store/repositories/advisory-repository.js';
 import { EvidenceRepository } from '../store/repositories/evidence-repository.js';
 import { SourceStateRepository } from '../store/repositories/source-state-repository.js';
+import { SearchIndex } from '../store/search-index.js';
 import { nowIso } from '../util/time.js';
 
 import type { Downloader } from './downloader.js';
@@ -26,11 +27,13 @@ export class SyncEngine {
   private readonly advisoryRepo: AdvisoryRepository;
   private readonly evidenceRepo: EvidenceRepository;
   private readonly stateRepo: SourceStateRepository;
+  private readonly search: SearchIndex;
 
   constructor(private readonly deps: SyncEngineDeps) {
     this.advisoryRepo = new AdvisoryRepository(deps.db);
     this.evidenceRepo = new EvidenceRepository(deps.db);
     this.stateRepo = new SourceStateRepository(deps.db);
+    this.search = new SearchIndex(deps.db);
   }
 
   async syncOne(adapter: SourceAdapter): Promise<SyncSourceResult> {
@@ -72,30 +75,10 @@ export class SyncEngine {
       }
 
       let records = 0;
+      const fetchedAt = fetched.artifacts[0]?.fetchedAt ?? nowIso();
       for await (const record of adapter.parse(ctx, fetched)) {
         const evidences = await adapter.normalize(ctx, record);
-        for (const ev of evidences) {
-          if (ev.advisoryDraft) {
-            this.advisoryRepo.upsert({
-              ...ev.advisoryDraft,
-              mergedJson: JSON.stringify(ev.advisoryDraft),
-            });
-          }
-          this.evidenceRepo.upsert({
-            id: ev.id,
-            advisoryId: ev.advisoryId,
-            source: adapter.id,
-            type: ev.evidenceType,
-            fetchedAt: fetched.artifacts[0]?.fetchedAt ?? nowIso(),
-            observedAt: ev.observedAt,
-            sourceModifiedAt: ev.sourceModifiedAt,
-            confidence: ev.confidence,
-            trustTier: adapter.trustTier,
-            summary: ev.summary,
-            normalizedJson: JSON.stringify(ev.normalized),
-          });
-          records++;
-        }
+        records += this.applyRecord(adapter, evidences, fetchedAt);
       }
 
       return this.finish(adapter, 'success', startedAt, startNs, records, undefined, {
@@ -113,6 +96,61 @@ export class SyncEngine {
     const out: SyncSourceResult[] = [];
     for (const a of adapters) out.push(await this.syncOne(a));
     return out;
+  }
+
+  private applyRecord(
+    adapter: SourceAdapter,
+    evidences: { id: string; advisoryId: string; evidenceType: string; observedAt?: string; sourceModifiedAt?: string; confidence: number; summary: string; normalized: unknown; advisoryDraft?: { id: string; canonicalId: string; type: string; title?: string; description?: string; publishedAt?: string; modifiedAt?: string; aliases?: string[] } }[],
+    fetchedAt: string,
+  ): number {
+    const indexedAdvisoryIds = new Set<string>();
+    let written = 0;
+    for (const ev of evidences) {
+      if (ev.advisoryDraft) {
+        this.advisoryRepo.upsert({
+          ...ev.advisoryDraft,
+          mergedJson: JSON.stringify(ev.advisoryDraft),
+        });
+        indexedAdvisoryIds.add(ev.advisoryId);
+      }
+      this.evidenceRepo.upsert({
+        id: ev.id,
+        advisoryId: ev.advisoryId,
+        source: adapter.id,
+        type: ev.evidenceType,
+        fetchedAt,
+        observedAt: ev.observedAt,
+        sourceModifiedAt: ev.sourceModifiedAt,
+        confidence: ev.confidence,
+        trustTier: adapter.trustTier,
+        summary: ev.summary,
+        normalizedJson: JSON.stringify(ev.normalized),
+      });
+      written++;
+    }
+    for (const advisoryId of indexedAdvisoryIds) {
+      this.reindexAdvisory(advisoryId);
+    }
+    return written;
+  }
+
+  // Re-index the FTS row from the current DB state. Filter facets (severity,
+  // hasFix) come from the merger in M16; knownExploited is derivable now from
+  // KEV evidence rows.
+  private reindexAdvisory(advisoryId: string): void {
+    const advisory = this.advisoryRepo.findById(advisoryId);
+    if (!advisory) return;
+    const evidenceRows = this.evidenceRepo.findByAdvisoryId(advisoryId);
+    const knownExploited = evidenceRows.some(
+      (e) => e.source === 'cisa-kev' && e.type === 'known_exploited',
+    );
+    this.search.indexAdvisory({
+      id: advisory.id,
+      title: advisory.title ?? undefined,
+      description: advisory.description ?? undefined,
+      aliases: this.advisoryRepo.aliasesFor(advisoryId),
+      knownExploited,
+    });
   }
 
   private finish(

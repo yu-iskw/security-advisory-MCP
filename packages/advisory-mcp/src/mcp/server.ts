@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { registerAdvisoryResources } from './resources.js';
 import { analyzeAdvisory, AnalyzeAdvisoryInputSchema } from './tools/analyze-advisory.js';
 import { ping } from './tools/ping.js';
+import { searchAdvisories, SearchAdvisoriesInputSchema } from './tools/search-advisories.js';
 
 import type { AdvisoryStore } from '../store/store.js';
 
@@ -60,6 +61,34 @@ export function createMcpServer(options: CreateMcpServerOptions = {}): McpServer
       (input) => {
         const parsed = AnalyzeAdvisoryInputSchema.parse(input);
         const result = analyzeAdvisory(store, parsed);
+        return {
+          content: [
+            { type: 'text' as const, text: result.markdown },
+            { type: 'text' as const, text: JSON.stringify(result, null, 2) },
+          ],
+        };
+      },
+    );
+
+    server.registerTool(
+      'search_advisories',
+      {
+        title: 'Search advisories',
+        description:
+          'Full-text search the locally-cached advisory index. Supports optional ' +
+          'filters for severity, knownExploited, and hasFix. Returns up to 50 hits ' +
+          'sorted by relevance. Does not access the network.',
+        inputSchema: {
+          query: z.string().min(1).max(200),
+          severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+          knownExploited: z.boolean().optional(),
+          hasFix: z.boolean().optional(),
+          limit: z.number().int().min(1).max(50).default(10).optional(),
+        },
+      },
+      (input) => {
+        const parsed = SearchAdvisoriesInputSchema.parse(input);
+        const result = searchAdvisories(store, parsed);
         return {
           content: [
             { type: 'text' as const, text: result.markdown },
