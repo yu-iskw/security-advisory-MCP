@@ -4,6 +4,8 @@ import { SourceStateRepository } from '../store/repositories/source-state-reposi
 import { SearchIndex } from '../store/search-index.js';
 import { nowIso } from '../util/time.js';
 
+import { mergeAdvisory } from './merger.js';
+
 import type { Downloader } from './downloader.js';
 import type { SourceAdapter, SyncContext } from '../sources/source.js';
 import type { DatabaseHandle } from '../store/db.js';
@@ -134,22 +136,41 @@ export class SyncEngine {
     return written;
   }
 
-  // Re-index the FTS row from the current DB state. Filter facets (severity,
-  // hasFix) come from the merger in M16; knownExploited is derivable now from
-  // KEV evidence rows.
+  // Re-merge all evidence for `advisoryId`, persist the merged JSON +
+  // denormalized filter columns, and re-index the FTS row. Called after each
+  // record write so multi-source coverage stays consistent.
   private reindexAdvisory(advisoryId: string): void {
     const advisory = this.advisoryRepo.findById(advisoryId);
     if (!advisory) return;
     const evidenceRows = this.evidenceRepo.findByAdvisoryId(advisoryId);
-    const knownExploited = evidenceRows.some(
-      (e) => e.source === 'cisa-kev' && e.type === 'known_exploited',
+    const merged = mergeAdvisory(
+      advisory.canonicalId,
+      evidenceRows.map((e) => ({
+        source: e.source,
+        evidenceType: e.type,
+        normalizedJson: e.normalizedJson,
+      })),
     );
+    // Re-upsert the advisory with merged fields so subsequent reads see the
+    // canonical values regardless of which source wrote last.
+    this.advisoryRepo.upsert({
+      id: advisory.id,
+      canonicalId: advisory.canonicalId,
+      type: advisory.type,
+      title: merged.title ?? advisory.title ?? undefined,
+      description: merged.description ?? advisory.description ?? undefined,
+      publishedAt: merged.publishedAt ?? advisory.publishedAt ?? undefined,
+      modifiedAt: merged.modifiedAt ?? advisory.modifiedAt ?? undefined,
+      mergedJson: JSON.stringify(merged),
+      aliases: this.advisoryRepo.aliasesFor(advisoryId),
+    });
     this.search.indexAdvisory({
       id: advisory.id,
-      title: advisory.title ?? undefined,
-      description: advisory.description ?? undefined,
+      title: merged.title ?? advisory.title ?? undefined,
+      description: merged.description ?? advisory.description ?? undefined,
       aliases: this.advisoryRepo.aliasesFor(advisoryId),
-      knownExploited,
+      severity: merged.severity === 'none' ? undefined : merged.severity,
+      knownExploited: merged.knownExploited,
     });
   }
 
