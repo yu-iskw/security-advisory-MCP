@@ -53,7 +53,3 @@ export function assertAllowlistedUrl(urlString: string): URL {
   }
   return url;
 }
-
-export function isAllowlistedHost(hostname: string): boolean {
-  return ALLOWED_HOSTS.has(hostname.toLowerCase());
-}

@@ -159,7 +159,3 @@ export function sourcesForPreset(preset: SyncPreset): SourceDefinition[] {
   const ids = new Set(sourceIdsForPreset(preset));
   return SOURCE_DEFINITIONS.filter((s) => ids.has(s.id));
 }
-
-export function getSourceDefinition(id: SourceId): SourceDefinition | undefined {
-  return SOURCE_DEFINITIONS.find((s) => s.id === id);
-}
