@@ -52,9 +52,9 @@ function getAppliedVersion(db: Database.Database): number {
   if (!hasMigrationsTable(db)) {
     return 0;
   }
-  const row = db
-    .prepare('SELECT MAX(version) AS version FROM schema_migrations')
-    .get() as { version: number | null } | undefined;
+  const row = db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get() as
+    | { version: number | null }
+    | undefined;
   return row?.version ?? 0;
 }
 

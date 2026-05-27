@@ -1,16 +1,21 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import { assertStoreReady, DatabaseNotInitializedError } from '../store/db.js';
+import { sourceStatusInputSchema } from '../schemas/source.js';
+import { assertStoreReady } from '../store/db.js';
+import {
+  buildSourceStatusSummary,
+  sourceStatusPayload,
+} from '../store/repositories/source-state-repository.js';
 
 import { PROMPT_NAMES, buildTriageAdvisoryPrompt } from './prompts.js';
 import {
-  BUILTIN_RISK_PROFILES,
+  RISK_PROFILE_NAMES,
   readRiskProfileResource,
   readSourceStatusResource,
   RESOURCE_URIS,
+  resourceContents,
 } from './resources.js';
-import { runSourceStatus } from './tools/source-status.js';
 
 import type { AdvisoryStore } from '../store/db.js';
 
@@ -40,18 +45,16 @@ export function createMcpServer(options: CreateMcpServerOptions): McpServer {
     {
       description:
         'Return sync and freshness state for configured advisory sources. Read-only; does not access the network.',
-      inputSchema: z.object({
-        source: z.string().optional(),
-        includeDisabled: z.boolean().default(false),
-      }),
+      inputSchema: sourceStatusInputSchema,
     },
     (input) => {
       ensureReady();
-      const result = runSourceStatus(store, input);
+      const summary = buildSourceStatusSummary(store, input);
+      const structured = sourceStatusPayload(summary);
       return {
         content: [
-          { type: 'text', text: result.markdownSummary },
-          { type: 'text', text: JSON.stringify(result.structured, null, 2) },
+          { type: 'text', text: summary.markdownSummary },
+          { type: 'text', text: JSON.stringify(structured, null, 2) },
         ],
       };
     },
@@ -66,43 +69,19 @@ export function createMcpServer(options: CreateMcpServerOptions): McpServer {
     },
     () => {
       ensureReady();
-      const resource = readSourceStatusResource(store);
-      return {
-        contents: [
-          {
-            uri: resource.uri,
-            mimeType: resource.mimeType,
-            text: resource.text,
-          },
-        ],
-      };
+      return resourceContents(readSourceStatusResource(store));
     },
   );
 
-  for (const profileName of Object.keys(BUILTIN_RISK_PROFILES)) {
-    const uri = `advisory://risk-profile/${profileName}`;
+  for (const profileName of RISK_PROFILE_NAMES) {
     server.registerResource(
       `risk-profile-${profileName}`,
-      uri,
+      RESOURCE_URIS.riskProfile(profileName),
       {
         description: `Risk prioritization profile: ${profileName}`,
         mimeType: 'application/json',
       },
-      () => {
-        const resource = readRiskProfileResource(profileName);
-        if (!resource) {
-          throw new Error(`Unknown risk profile: ${profileName}`);
-        }
-        return {
-          contents: [
-            {
-              uri: resource.uri,
-              mimeType: resource.mimeType,
-              text: resource.text,
-            },
-          ],
-        };
-      },
+      () => resourceContents(readRiskProfileResource(profileName)),
     );
   }
 
@@ -120,5 +99,3 @@ export function createMcpServer(options: CreateMcpServerOptions): McpServer {
 
   return server;
 }
-
-export { DatabaseNotInitializedError };

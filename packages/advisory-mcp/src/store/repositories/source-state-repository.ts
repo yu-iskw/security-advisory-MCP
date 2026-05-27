@@ -41,10 +41,19 @@ function mapRow(row: SourceStateDbRow): SourceStateRow {
   });
 }
 
-export function listSourceStates(
-  store: AdvisoryStore,
-  input: SourceStatusInput,
-): SourceStateRow[] {
+export function listSourceStates(store: AdvisoryStore, input: SourceStatusInput): SourceStateRow[] {
+  const conditions: string[] = [];
+  const params: { source?: string } = {};
+
+  if (input.source) {
+    conditions.push('source = @source');
+    params.source = input.source;
+  }
+  if (!input.includeDisabled) {
+    conditions.push('enabled = 1');
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
   const rows = store.db
     .prepare(
       `SELECT
@@ -61,21 +70,12 @@ export function listSourceStates(
         sha256,
         status
       FROM source_state
+      ${where}
       ORDER BY source`,
     )
-    .all() as SourceStateDbRow[];
+    .all(params) as SourceStateDbRow[];
 
-  return rows
-    .map(mapRow)
-    .filter((row) => {
-      if (input.source && row.source !== input.source) {
-        return false;
-      }
-      if (!input.includeDisabled && !row.enabled) {
-        return false;
-      }
-      return true;
-    });
+  return rows.map(mapRow);
 }
 
 export interface SourceStatusSummary {
@@ -83,6 +83,18 @@ export interface SourceStatusSummary {
   advisoryCount: number;
   evidenceCount: number;
   markdownSummary: string;
+}
+
+export function sourceStatusPayload(summary: SourceStatusSummary): {
+  sources: SourceStateRow[];
+  advisoryCount: number;
+  evidenceCount: number;
+} {
+  return {
+    sources: summary.sources,
+    advisoryCount: summary.advisoryCount,
+    evidenceCount: summary.evidenceCount,
+  };
 }
 
 export function buildSourceStatusSummary(
@@ -112,7 +124,10 @@ export function buildSourceStatusSummary(
   ];
 
   if (sources.length === 0) {
-    lines.push('', '_No source state rows. Run `advisory-mcp init` and `advisory-mcp sync --preset core`._');
+    lines.push(
+      '',
+      '_No source state rows. Run `advisory-mcp init` and `advisory-mcp sync --preset core`._',
+    );
   }
 
   return {

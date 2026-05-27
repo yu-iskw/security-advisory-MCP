@@ -1,5 +1,5 @@
 import { syncPresetSchema, type SyncPreset } from '../../schemas/source.js';
-import { assertStoreReady, openStore, type AdvisoryStore } from '../../store/db.js';
+import { assertStoreReady, openStore } from '../../store/db.js';
 import { resolvePaths } from '../../util/paths.js';
 
 export interface SyncOptions {
@@ -22,7 +22,7 @@ export function runSync(options: SyncOptions): SyncResult {
 
   try {
     if (options.fixturesPath) {
-      return runFixtureSync(store, preset, options.fixturesPath);
+      return fixtureSyncMessage(preset, options.fixturesPath);
     }
 
     return {
@@ -36,11 +36,7 @@ export function runSync(options: SyncOptions): SyncResult {
   }
 }
 
-function runFixtureSync(
-  _store: AdvisoryStore,
-  preset: SyncPreset,
-  fixturesPath: string,
-): SyncResult {
+function fixtureSyncMessage(preset: SyncPreset, fixturesPath: string): SyncResult {
   return {
     preset,
     message: `Fixture sync from ${fixturesPath} is planned in the next implementation step.`,

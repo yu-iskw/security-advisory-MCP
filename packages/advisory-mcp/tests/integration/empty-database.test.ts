@@ -8,11 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { runInit } from '../../src/cli/commands/init.js';
 import { createMcpServer } from '../../src/mcp/server.js';
-import {
-  DatabaseNotInitializedError,
-  isStoreInitialized,
-  openStore,
-} from '../../src/store/db.js';
+import { DatabaseNotInitializedError, isStoreInitialized, openStore } from '../../src/store/db.js';
 
 const tempDirs: string[] = [];
 

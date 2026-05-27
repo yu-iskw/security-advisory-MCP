@@ -26,13 +26,18 @@ program
   .option('--cache <path>', 'Download cache path')
   .action((options: { database?: string; cache?: string }) => {
     const result = runInit({ databasePath: options.database, cachePath: options.cache });
-    process.stdout.write(`Initialized advisory-mcp\nDatabase: ${result.databasePath}\nCache: ${result.cachePath}\n`);
+    process.stdout.write(
+      `Initialized advisory-mcp\nDatabase: ${result.databasePath}\nCache: ${result.cachePath}\n`,
+    );
   });
 
 program
   .command('sync')
   .description('Sync public keyless advisory feeds into the local database')
-  .requiredOption('--preset <preset>', 'Sync preset: core, packages, ecosystems, context, all, research')
+  .requiredOption(
+    '--preset <preset>',
+    'Sync preset: core, packages, ecosystems, context, all, research',
+  )
   .option(DB_OPTION, DB_OPTION_DESC)
   .option('--fixtures <path>', 'Load deterministic fixture feeds (tests)')
   .action((options: { preset: string; database?: string; fixtures?: string }) => {
@@ -70,19 +75,12 @@ program
   .option('--transport <transport>', 'Transport: stdio or http', 'stdio')
   .option('--port <port>', 'HTTP port (http transport only)', '8765')
   .option(DB_OPTION, DB_OPTION_DESC)
-  .option('--auto-sync-if-empty', 'Sync when database is empty (explicit opt-in)', false)
-  .action(async (options: {
-    transport: string;
-    port: string;
-    database?: string;
-    autoSyncIfEmpty?: boolean;
-  }) => {
+  .action(async (options: { transport: string; port: string; database?: string }) => {
     const transport = options.transport === 'http' ? 'http' : 'stdio';
     await runServe({
       transport,
       port: Number.parseInt(options.port, 10),
       databasePath: options.database,
-      autoSyncIfEmpty: options.autoSyncIfEmpty,
     });
   });
 
