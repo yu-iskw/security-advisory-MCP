@@ -7,6 +7,7 @@ import { CISA_VULNRICHMENT_HOST, CisaVulnrichmentSource } from '../../sources/ci
 import { CVEPROJECT_HOST, CveProjectSource } from '../../sources/cveproject.js';
 import { FIRST_EPSS_HOST, FirstEpssSource } from '../../sources/first-epss.js';
 import { NVD_HOST, NvdFeedsSource } from '../../sources/nvd-feeds.js';
+import { OSV_GITHUB_HOST, OsvGithubSource } from '../../sources/osv-github.js';
 import { SourceRegistry } from '../../sources/registry.js';
 import { openStore, closeStore } from '../../store/db.js';
 import { createLogger } from '../../util/logger.js';
@@ -50,6 +51,7 @@ export async function runSync(options: SyncOptions): Promise<void> {
       CISA_VULNRICHMENT_HOST,
       CVEPROJECT_HOST,
       NVD_HOST,
+      OSV_GITHUB_HOST,
     ],
   });
   const downloader = new HttpsDownloader(policy);
@@ -69,6 +71,9 @@ export async function runSync(options: SyncOptions): Promise<void> {
   }
   if (config.sources['nvd-feed']?.enabled) {
     registry.register(new NvdFeedsSource());
+  }
+  if (config.sources.osv?.enabled) {
+    registry.register(new OsvGithubSource());
   }
 
   const adapters = registry.resolvePreset(options.preset);
