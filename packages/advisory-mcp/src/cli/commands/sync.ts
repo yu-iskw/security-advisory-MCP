@@ -3,6 +3,7 @@ import { HttpsDownloader } from '../../ingest/downloader.js';
 import { SyncEngine } from '../../ingest/sync-engine.js';
 import { UrlPolicy } from '../../security/url-policy.js';
 import { CISA_KEV_HOST, CisaKevSource } from '../../sources/cisa-kev.js';
+import { CISA_VULNRICHMENT_HOST, CisaVulnrichmentSource } from '../../sources/cisa-vulnrichment.js';
 import { FIRST_EPSS_HOST, FirstEpssSource } from '../../sources/first-epss.js';
 import { SourceRegistry } from '../../sources/registry.js';
 import { openStore, closeStore } from '../../store/db.js';
@@ -40,7 +41,9 @@ export async function runSync(options: SyncOptions): Promise<void> {
   const logger = createLogger({ level: config.logLevel });
 
   // Allowlisted hosts grow as adapters are added.
-  const policy = new UrlPolicy({ allowedHosts: [CISA_KEV_HOST, FIRST_EPSS_HOST] });
+  const policy = new UrlPolicy({
+    allowedHosts: [CISA_KEV_HOST, FIRST_EPSS_HOST, CISA_VULNRICHMENT_HOST],
+  });
   const downloader = new HttpsDownloader(policy);
 
   const registry = new SourceRegistry();
@@ -49,6 +52,9 @@ export async function runSync(options: SyncOptions): Promise<void> {
   }
   if (config.sources['first-epss']?.enabled) {
     registry.register(new FirstEpssSource());
+  }
+  if (config.sources['cisa-vulnrichment']?.enabled) {
+    registry.register(new CisaVulnrichmentSource());
   }
 
   const adapters = registry.resolvePreset(options.preset);
