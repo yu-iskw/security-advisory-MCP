@@ -4,6 +4,7 @@ import { SyncEngine } from '../../ingest/sync-engine.js';
 import { UrlPolicy } from '../../security/url-policy.js';
 import { CISA_KEV_HOST, CisaKevSource } from '../../sources/cisa-kev.js';
 import { CISA_VULNRICHMENT_HOST, CisaVulnrichmentSource } from '../../sources/cisa-vulnrichment.js';
+import { CVEPROJECT_HOST, CveProjectSource } from '../../sources/cveproject.js';
 import { FIRST_EPSS_HOST, FirstEpssSource } from '../../sources/first-epss.js';
 import { SourceRegistry } from '../../sources/registry.js';
 import { openStore, closeStore } from '../../store/db.js';
@@ -42,7 +43,12 @@ export async function runSync(options: SyncOptions): Promise<void> {
 
   // Allowlisted hosts grow as adapters are added.
   const policy = new UrlPolicy({
-    allowedHosts: [CISA_KEV_HOST, FIRST_EPSS_HOST, CISA_VULNRICHMENT_HOST],
+    allowedHosts: [
+      CISA_KEV_HOST,
+      FIRST_EPSS_HOST,
+      CISA_VULNRICHMENT_HOST,
+      CVEPROJECT_HOST,
+    ],
   });
   const downloader = new HttpsDownloader(policy);
 
@@ -55,6 +61,9 @@ export async function runSync(options: SyncOptions): Promise<void> {
   }
   if (config.sources['cisa-vulnrichment']?.enabled) {
     registry.register(new CisaVulnrichmentSource());
+  }
+  if (config.sources.cveproject?.enabled) {
+    registry.register(new CveProjectSource());
   }
 
   const adapters = registry.resolvePreset(options.preset);
