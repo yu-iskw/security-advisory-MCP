@@ -1,7 +1,7 @@
-import fs from 'node:fs';
-
-import { openStore, seedCoreSourceStates } from '../../store/db.js';
+import { writeDefaultConfig } from '../../util/config.js';
 import { resolvePaths } from '../../util/paths.js';
+import { openStore, seedCoreSourceStates } from '../../store/db.js';
+import fs from 'node:fs';
 
 export interface InitOptions {
   databasePath?: string;
@@ -17,6 +17,7 @@ export function runInit(options: InitOptions = {}): { databasePath: string; cach
 
   fs.mkdirSync(paths.configDir, { recursive: true });
   fs.mkdirSync(paths.cachePath, { recursive: true });
+  writeDefaultConfig(paths.configDir);
 
   const store = openStore({ databasePath: paths.databasePath });
   seedCoreSourceStates(store, options.preset ?? 'core');

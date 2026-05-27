@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { SERVER_VERSION } from '../mcp/server.js';
 
 import { formatDoctorReport, runDoctor } from './commands/doctor.js';
+import { runExport } from './commands/export.js';
 import { runInit } from './commands/init.js';
 import { runServe } from './commands/serve.js';
 import { runStatus } from './commands/status.js';
@@ -73,15 +74,42 @@ program
   .command('serve')
   .description('Start the MCP server')
   .option('--transport <transport>', 'Transport: stdio or http', 'stdio')
+  .option('--auto-sync-if-empty', 'Sync from bundled fixtures when database is empty')
   .option('--port <port>', 'HTTP port (http transport only)', '8765')
   .option(DB_OPTION, DB_OPTION_DESC)
-  .action(async (options: { transport: string; port: string; database?: string }) => {
-    const transport = options.transport === 'http' ? 'http' : 'stdio';
-    await runServe({
-      transport,
-      port: Number.parseInt(options.port, 10),
+  .action(
+    async (options: {
+      transport: string;
+      port: string;
+      database?: string;
+      autoSyncIfEmpty?: boolean;
+    }) => {
+      const transport = options.transport === 'http' ? 'http' : 'stdio';
+      await runServe({
+        transport,
+        port: Number.parseInt(options.port, 10),
+        databasePath: options.database,
+        autoSyncIfEmpty: options.autoSyncIfEmpty,
+      });
+    },
+  );
+
+program
+  .command('export')
+  .description('Export local advisory database as JSON')
+  .option('--format <format>', 'Export format', 'json')
+  .option('--output <path>', 'Write to file instead of stdout')
+  .option(DB_OPTION, DB_OPTION_DESC)
+  .action((options: { format: string; output?: string; database?: string }) => {
+    const text = runExport({
+      format: options.format,
+      outputPath: options.output,
       databasePath: options.database,
     });
+    if (!options.output) {
+      process.stdout.write(`${text}
+`);
+    }
   });
 
 program.parseAsync(process.argv).catch((error: unknown) => {

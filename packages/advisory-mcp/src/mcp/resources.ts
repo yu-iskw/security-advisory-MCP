@@ -1,72 +1,70 @@
+import { advisorySchema } from '../schemas/advisory.js';
+import { evidenceSchema } from '../schemas/evidence.js';
+import { PROFILE_WEIGHTS } from '../risk/profiles.js';
+import type { RiskProfileName } from '../schemas/risk.js';
+import { findAdvisoryById } from '../store/repositories/advisory-repository.js';
 import {
   buildSourceStatusSummary,
   sourceStatusPayload,
 } from '../store/repositories/source-state-repository.js';
+import { listEvidenceForAdvisory } from '../store/repositories/evidence-repository.js';
+import { computeRiskScore } from '../risk/score.js';
 
 import type { AdvisoryStore } from '../store/db.js';
 
 export const RESOURCE_URIS = {
   sourceStatus: 'advisory://source/status',
   riskProfile: (name: RiskProfileName) => `advisory://risk-profile/${name}`,
+  advisoryById: (id: string) => `advisory://id/${encodeURIComponent(id)}`,
+  advisorySchema: 'advisory://schema/advisory',
+  evidenceSchema: 'advisory://schema/evidence',
 } as const;
 
-export const BUILTIN_RISK_PROFILES = {
-  default: {
-    name: 'default',
-    description: 'Balanced general prioritization',
-    weights: {
-      knownExploitation: 0.25,
-      epss: 0.2,
-      cvss: 0.2,
-      packageCertainty: 0.15,
-      ecosystemExposure: 0.1,
-      recency: 0.05,
-      evidenceConfidence: 0.05,
-    },
-  },
-  internet_exposed: {
-    name: 'internet_exposed',
-    description: 'Bias toward KEV, EPSS, and network attack surface',
-    weights: {
-      knownExploitation: 0.35,
-      epss: 0.25,
-      cvss: 0.2,
-      packageCertainty: 0.1,
-      ecosystemExposure: 0.05,
-      recency: 0.03,
-      evidenceConfidence: 0.02,
-    },
-  },
-} as const;
+export const RISK_PROFILE_NAMES = Object.keys(PROFILE_WEIGHTS) as RiskProfileName[];
 
-export type RiskProfileName = keyof typeof BUILTIN_RISK_PROFILES;
-
-export const RISK_PROFILE_NAMES = Object.keys(BUILTIN_RISK_PROFILES) as RiskProfileName[];
-
-export function readSourceStatusResource(store: AdvisoryStore): {
-  uri: string;
-  mimeType: string;
-  text: string;
-} {
+export function readSourceStatusResource(store: AdvisoryStore) {
   const summary = buildSourceStatusSummary(store, { includeDisabled: true });
-  return {
-    uri: RESOURCE_URIS.sourceStatus,
-    mimeType: 'application/json',
-    text: JSON.stringify(sourceStatusPayload(summary), null, 2),
-  };
+  return jsonResource(RESOURCE_URIS.sourceStatus, sourceStatusPayload(summary));
 }
 
-export function readRiskProfileResource(name: RiskProfileName): {
-  uri: string;
-  mimeType: string;
-  text: string;
-} {
-  const profile =
-    name === 'default' ? BUILTIN_RISK_PROFILES.default : BUILTIN_RISK_PROFILES.internet_exposed;
+export function readRiskProfileResource(name: RiskProfileName) {
+  const profile = PROFILE_WEIGHTS[name];
+  return jsonResource(RESOURCE_URIS.riskProfile(name), { name, weights: profile });
+}
+
+export function readAdvisoryResource(store: AdvisoryStore, id: string) {
+  const advisory = findAdvisoryById(store, id);
+  if (!advisory) {
+    throw new Error(`Advisory not found: ${id}`);
+  }
+  const evidence = listEvidenceForAdvisory(store, advisory.id);
+  const risk = computeRiskScore(advisory, evidence, 'default');
+  return jsonResource(RESOURCE_URIS.advisoryById(advisory.canonicalId), {
+    id: advisory.canonicalId,
+    aliases: advisory.aliases,
+    title: advisory.title,
+    risk: { score: risk.score, severity: risk.severity, profile: 'default' },
+    evidence: evidence.map((e) => ({
+      source: e.source,
+      confidence: e.confidence,
+      fetchedAt: e.fetchedAt,
+    })),
+  });
+}
+
+export function readAdvisorySchemaResource() {
+  return jsonResource(RESOURCE_URIS.advisorySchema, { schema: advisorySchema.shape });
+}
+
+export function readEvidenceSchemaResource() {
+  return jsonResource(RESOURCE_URIS.evidenceSchema, { schema: evidenceSchema.shape });
+}
+
+function jsonResource(uri: string, payload: unknown) {
   return {
-    uri: RESOURCE_URIS.riskProfile(name),
+    uri,
     mimeType: 'application/json',
-    text: JSON.stringify(profile, null, 2),
+    text: JSON.stringify(payload, null, 2),
   };
 }
 

@@ -1,0 +1,15 @@
+{
+  "advisoryId": "MAL-2024-0001",
+  "title": "Malicious npm typosquat",
+  "type": "malicious-package",
+  "affected": [
+    {
+      "ecosystem": "npm",
+      "name": "evil-pkg",
+      "vulnerableRanges": ["*"],
+      "fixedVersions": [],
+      "source": "ossf-malicious-packages",
+      "confidence": 0.99
+    }
+  ]
+}

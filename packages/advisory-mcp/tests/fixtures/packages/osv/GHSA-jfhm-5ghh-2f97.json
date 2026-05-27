@@ -1,0 +1,15 @@
+{
+  "advisoryId": "GHSA-jfhm-5ghh-2f97",
+  "aliases": ["CVE-2021-44228"],
+  "title": "log4j RCE",
+  "affected": [
+    {
+      "ecosystem": "Maven",
+      "name": "org.apache.logging.log4j:log4j-core",
+      "vulnerableRanges": ["<2.15.0"],
+      "fixedVersions": ["2.15.0"],
+      "source": "osv",
+      "confidence": 0.9
+    }
+  ]
+}

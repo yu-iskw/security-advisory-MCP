@@ -1,22 +1,58 @@
+import { countAdvisories } from '../../store/repositories/advisory-repository.js';
 import { serveStdio } from '../../mcp/transports/stdio.js';
+import { serveHttp } from '../../mcp/transports/http.js';
+import { runSync } from './sync.js';
 import { DatabaseNotInitializedError, isStoreInitialized, openStore } from '../../store/db.js';
+import { getBundledFixturesPath } from '../../util/fixtures-path.js';
+import { loadConfig } from '../../util/config.js';
 import { resolvePaths } from '../../util/paths.js';
 
 export interface ServeOptions {
   transport: 'stdio' | 'http';
   databasePath?: string;
+  autoSyncIfEmpty?: boolean;
   port?: number;
 }
 
 export async function runServe(options: ServeOptions): Promise<void> {
-  if (options.transport === 'http') {
-    throw new Error('HTTP transport is planned for a later RFC phase.');
+  const config = loadConfig();
+  const paths = resolvePaths({ databasePath: options.databasePath ?? config.databasePath });
+
+  if (!isStoreInitialized(paths.databasePath)) {
+    if (options.autoSyncIfEmpty ?? config.autoSyncIfEmpty) {
+      runSync({
+        preset: config.defaultPreset,
+        databasePath: paths.databasePath,
+        fixturesPath: getBundledFixturesPath(),
+      });
+    } else {
+      throw new DatabaseNotInitializedError(paths.databasePath);
+    }
   }
 
-  const paths = resolvePaths({ databasePath: options.databasePath });
-  if (!isStoreInitialized(paths.databasePath)) {
-    throw new DatabaseNotInitializedError(paths.databasePath);
-  }
   const store = openStore({ databasePath: paths.databasePath });
+  if (options.autoSyncIfEmpty && countAdvisories(store) === 0) {
+    store.close();
+    runSync({
+      preset: config.defaultPreset,
+      databasePath: paths.databasePath,
+      fixturesPath: getBundledFixturesPath(),
+    });
+    const refreshed = openStore({ databasePath: paths.databasePath });
+    if (options.transport === 'http') {
+      await serveHttp(options.port ?? 8765);
+      refreshed.close();
+      return;
+    }
+    await serveStdio({ store: refreshed, requireInitialized: true });
+    return;
+  }
+
+  if (options.transport === 'http') {
+    await serveHttp(options.port ?? 8765);
+    store.close();
+    return;
+  }
+
   await serveStdio({ store, requireInitialized: true });
 }

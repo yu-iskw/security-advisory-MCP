@@ -11,6 +11,12 @@ export const sourceIdSchema = z.enum([
   'ossf-malicious-packages',
   'mitre-cwe',
   'mitre-capec',
+  'debian',
+  'ubuntu',
+  'alpine',
+  'rustsec',
+  'go-vulndb',
+  'pypa',
 ]);
 
 export type SourceId = z.infer<typeof sourceIdSchema>;
