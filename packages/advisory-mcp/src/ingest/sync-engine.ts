@@ -1,4 +1,5 @@
 import { AdvisoryRepository } from '../store/repositories/advisory-repository.js';
+import { AffectedPackagesRepository } from '../store/repositories/affected-packages-repository.js';
 import { EvidenceRepository } from '../store/repositories/evidence-repository.js';
 import { SourceStateRepository } from '../store/repositories/source-state-repository.js';
 import { SearchIndex } from '../store/search-index.js';
@@ -9,6 +10,106 @@ import { mergeAdvisory } from './merger.js';
 import type { Downloader } from './downloader.js';
 import type { SourceAdapter, SyncContext } from '../sources/source.js';
 import type { DatabaseHandle } from '../store/db.js';
+
+interface AffectedRangeNorm {
+  introduced?: string;
+  fixed?: string;
+}
+
+interface AffectedPackageNorm {
+  ecosystem: string;
+  name: string;
+  purl?: string;
+  ranges?: ReadonlyArray<AffectedRangeNorm>;
+}
+
+interface PackageRowOut {
+  advisoryId: string;
+  ecosystem: string;
+  name: string;
+  purl?: string;
+  vulnerableRange?: string;
+  fixedVersion?: string;
+  source: string;
+  confidence: number;
+}
+
+function extractAffectedPackages(
+  evidenceRows: ReadonlyArray<{ source: string; normalizedJson: string; confidence: number }>,
+  advisoryId: string,
+): ReadonlyArray<PackageRowOut> {
+  const out: PackageRowOut[] = [];
+  for (const ev of evidenceRows) {
+    if (ev.source !== 'osv' && ev.source !== 'ossf-malicious-packages') continue;
+    const pkgs = readAffectedFromEvidence(ev.normalizedJson);
+    for (const pkg of pkgs) {
+      pushPackageRows(out, advisoryId, pkg, ev.source, ev.confidence);
+    }
+  }
+  return out;
+}
+
+function readAffectedFromEvidence(normalizedJson: string): ReadonlyArray<AffectedPackageNorm> {
+  let parsed: { affected?: unknown };
+  try {
+    parsed = JSON.parse(normalizedJson) as { affected?: unknown };
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed.affected)) return [];
+  const out: AffectedPackageNorm[] = [];
+  for (const a of parsed.affected) {
+    if (typeof a !== 'object' || a === null) continue;
+    const rec = a as Record<string, unknown>;
+    if (typeof rec.ecosystem !== 'string' || typeof rec.name !== 'string') continue;
+    const ranges = Array.isArray(rec.ranges)
+      ? (rec.ranges as ReadonlyArray<Record<string, unknown>>).map((r) => ({
+          introduced: typeof r.introduced === 'string' ? r.introduced : undefined,
+          fixed: typeof r.fixed === 'string' ? r.fixed : undefined,
+        }))
+      : undefined;
+    out.push({
+      ecosystem: rec.ecosystem,
+      name: rec.name,
+      purl: typeof rec.purl === 'string' ? rec.purl : undefined,
+      ranges,
+    });
+  }
+  return out;
+}
+
+function pushPackageRows(
+  out: PackageRowOut[],
+  advisoryId: string,
+  pkg: AffectedPackageNorm,
+  source: string,
+  confidence: number,
+): void {
+  const ranges = pkg.ranges ?? [];
+  if (ranges.length === 0) {
+    out.push({
+      advisoryId,
+      ecosystem: pkg.ecosystem,
+      name: pkg.name,
+      purl: pkg.purl,
+      source,
+      confidence,
+    });
+    return;
+  }
+  for (const r of ranges) {
+    out.push({
+      advisoryId,
+      ecosystem: pkg.ecosystem,
+      name: pkg.name,
+      purl: pkg.purl,
+      vulnerableRange: r.introduced !== undefined ? `>=${r.introduced}` : undefined,
+      fixedVersion: r.fixed,
+      source,
+      confidence,
+    });
+  }
+}
 
 interface SyncEngineDeps {
   db: DatabaseHandle;
@@ -27,12 +128,14 @@ interface SyncSourceResult {
 
 export class SyncEngine {
   private readonly advisoryRepo: AdvisoryRepository;
+  private readonly affectedRepo: AffectedPackagesRepository;
   private readonly evidenceRepo: EvidenceRepository;
   private readonly stateRepo: SourceStateRepository;
   private readonly search: SearchIndex;
 
   constructor(private readonly deps: SyncEngineDeps) {
     this.advisoryRepo = new AdvisoryRepository(deps.db);
+    this.affectedRepo = new AffectedPackagesRepository(deps.db);
     this.evidenceRepo = new EvidenceRepository(deps.db);
     this.stateRepo = new SourceStateRepository(deps.db);
     this.search = new SearchIndex(deps.db);
@@ -172,6 +275,10 @@ export class SyncEngine {
       severity: merged.severity === 'none' ? undefined : merged.severity,
       knownExploited: merged.knownExploited,
     });
+
+    // Update affected_packages from package-bearing evidence (OSV + malicious).
+    const packageRows = extractAffectedPackages(evidenceRows, advisory.id);
+    this.affectedRepo.replaceForAdvisory(advisory.id, packageRows);
   }
 
   private finish(
