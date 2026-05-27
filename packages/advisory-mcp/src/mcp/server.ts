@@ -5,6 +5,7 @@ import { registerAdvisoryResources } from './resources.js';
 import { analyzeAdvisory, AnalyzeAdvisoryInputSchema } from './tools/analyze-advisory.js';
 import { ping } from './tools/ping.js';
 import { searchAdvisories, SearchAdvisoriesInputSchema } from './tools/search-advisories.js';
+import { sourceStatus, SourceStatusInputSchema } from './tools/source-status.js';
 
 import type { AdvisoryStore } from '../store/store.js';
 
@@ -89,6 +90,31 @@ export function createMcpServer(options: CreateMcpServerOptions = {}): McpServer
       (input) => {
         const parsed = SearchAdvisoriesInputSchema.parse(input);
         const result = searchAdvisories(store, parsed);
+        return {
+          content: [
+            { type: 'text' as const, text: result.markdown },
+            { type: 'text' as const, text: JSON.stringify(result, null, 2) },
+          ],
+        };
+      },
+    );
+
+    server.registerTool(
+      'source_status',
+      {
+        title: 'Source status',
+        description:
+          'Report sync status and freshness for each configured advisory source. ' +
+          'Sources past the configured staleness threshold are flagged. Does not ' +
+          'access the network.',
+        inputSchema: {
+          source: z.string().min(1).max(64).optional(),
+          staleAfterHours: z.number().int().min(1).max(24 * 30).default(168).optional(),
+        },
+      },
+      (input) => {
+        const parsed = SourceStatusInputSchema.parse(input);
+        const result = sourceStatus(store, parsed);
         return {
           content: [
             { type: 'text' as const, text: result.markdown },

@@ -1,6 +1,7 @@
 import { ResourceTemplate, type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import { analyzeAdvisory } from './tools/analyze-advisory.js';
+import { sourceStatus } from './tools/source-status.js';
 
 import type { AdvisoryStore } from '../store/store.js';
 
@@ -16,6 +17,28 @@ export function registerAdvisoryResources(server: McpServer, store: AdvisoryStor
     (uri, vars) => {
       const id = String(vars.id ?? '');
       const result = analyzeAdvisory(store, { id, includeEvidence: true });
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: 'application/json',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerResource(
+    'source-status',
+    'advisory://source/status',
+    {
+      title: 'Source status',
+      description: 'Sync freshness and last error per configured source.',
+      mimeType: 'application/json',
+    },
+    (uri) => {
+      const result = sourceStatus(store, {});
       return {
         contents: [
           {
