@@ -1,13 +1,31 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignoreBinaries": ["grype"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreIssues": {
+    "packages/advisory-mcp/src/schemas/**": ["exports", "types"],
+    "packages/advisory-mcp/src/mcp/tools/**": ["types"],
+    "packages/advisory-mcp/src/cli/commands/**": ["types"],
+    "packages/advisory-mcp/src/ingest/**": ["types"],
+    "packages/advisory-mcp/src/store/**": ["types"],
+    "packages/advisory-mcp/src/sources/**": ["types"],
+    "packages/advisory-mcp/src/util/**": ["types"],
+    "packages/advisory-mcp/src/mcp/server.ts": ["types"],
+    "packages/advisory-mcp/src/mcp/transports/**": ["types"],
+    "packages/advisory-mcp/src/risk/profiles.ts": ["exports"]
+  },
   "workspaces": {
     ".": {
       "entry": ["stylelint.config.mjs"],
-      "project": ["**/*.{js,cjs,mjs,ts,cts,mts}", "!packages/**", "!.trunk/**", "!node_modules/**"]
+      "project": ["**/*.{js,cjs,mjs,ts,cts,mts}", "!packages/**", "!.trunk/**", "!node_modules/**"],
+      "ignoreDependencies": ["semver"]
     },
     "packages/*": {
       "project": ["src/**/*.ts"]
+    },
+    "advisory-mcp": {
+      "entry": ["src/index.ts", "src/cli/index.ts", "tests/**/*.test.ts", "vitest.config.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"]
     }
   }
 }

@@ -1,0 +1,1 @@
+export const GOLDEN_ADVISORY_IDS = ['CVE-2021-44228', 'CVE-2024-3094', 'CVE-2023-34362'] as const;
