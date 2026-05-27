@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { SERVER_NAME, SERVER_VERSION } from '../mcp/server.js';
 
 import { runServe, type ServeOptions } from './commands/serve.js';
+import { runSync, type SyncOptions } from './commands/sync.js';
 
 const program = new Command();
 
@@ -19,6 +20,15 @@ program
   .option('--config <path>', 'Path to a custom config.json')
   .action(async (options: ServeOptions) => {
     await runServe(options);
+  });
+
+program
+  .command('sync')
+  .description('Sync advisory sources into the local database')
+  .option('--preset <preset>', 'Source preset (core|packages|ecosystems|context|all|research)', 'core')
+  .option('--config <path>', 'Path to a custom config.json')
+  .action(async (options: SyncOptions) => {
+    await runSync(options);
   });
 
 await program.parseAsync(process.argv);

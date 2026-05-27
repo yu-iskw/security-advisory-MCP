@@ -21,11 +21,19 @@ export type SyncPreset =
   | 'context'
   | 'research';
 
+import type { Downloader } from '../ingest/downloader.js';
+
 export interface SyncContext {
   /** Absolute cache directory dedicated to this source. */
   cacheDir: string;
+  /** HTTPS downloader (URL-policy-checked). Tests inject a stub. */
+  downloader: Downloader;
   /** Used to short-circuit if the server is shutting down. */
   signal: AbortSignal;
+  /** Conditional-request validators from the last successful sync. */
+  lastEtag?: string;
+  lastModified?: string;
+  lastVersion?: string;
 }
 
 export interface UpdateCheckResult {

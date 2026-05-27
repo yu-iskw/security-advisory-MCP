@@ -23,7 +23,7 @@ export class DownloadError extends Error {
   }
 }
 
-interface DownloadRequest {
+export interface DownloadRequest {
   url: string;
   /** Conditional-request validators. If the server replies 304, returns undefined. */
   etag?: string;
@@ -36,7 +36,7 @@ interface DownloadRequest {
   signal?: AbortSignal;
 }
 
-interface DownloadedBody {
+export interface DownloadedBody {
   url: string;
   status: number;
   contentType: string | undefined;
@@ -46,7 +46,7 @@ interface DownloadedBody {
   sha256: string;
 }
 
-interface Downloader {
+export interface Downloader {
   download(req: DownloadRequest): Promise<DownloadedBody | 'not_modified'>;
 }
 
