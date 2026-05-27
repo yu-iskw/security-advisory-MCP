@@ -1,5 +1,7 @@
 import { ResourceTemplate, type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
+import { getRiskWeights, isRiskProfileName, RISK_PROFILE_NAMES } from '../risk/profiles.js';
+
 import { analyzeAdvisory } from './tools/analyze-advisory.js';
 import { sourceStatus } from './tools/source-status.js';
 
@@ -45,6 +47,31 @@ export function registerAdvisoryResources(server: McpServer, store: AdvisoryStor
             uri: uri.href,
             mimeType: 'application/json',
             text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerResource(
+    'risk-profile',
+    new ResourceTemplate('advisory://risk-profile/{name}', { list: undefined }),
+    {
+      title: 'Risk profile weights',
+      description:
+        'Returns the weight matrix for the named risk profile (default, internet_exposed, application_dependency, container_image, executive, research).',
+    },
+    (uri, vars) => {
+      const name = String(vars.name ?? '');
+      const body = isRiskProfileName(name)
+        ? { name, weights: getRiskWeights(name) }
+        : { error: `unknown risk profile: ${name}`, known: RISK_PROFILE_NAMES };
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: 'application/json',
+            text: JSON.stringify(body, null, 2),
           },
         ],
       };

@@ -1,8 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
+import { RISK_PROFILE_NAMES } from '../risk/profiles.js';
+
 import { registerAdvisoryResources } from './resources.js';
 import { analyzeAdvisory, AnalyzeAdvisoryInputSchema } from './tools/analyze-advisory.js';
+import { explainRisk, ExplainRiskInputSchema } from './tools/explain-risk.js';
 import { ping } from './tools/ping.js';
 import { searchAdvisories, SearchAdvisoriesInputSchema } from './tools/search-advisories.js';
 import { sourceStatus, SourceStatusInputSchema } from './tools/source-status.js';
@@ -115,6 +118,31 @@ export function createMcpServer(options: CreateMcpServerOptions = {}): McpServer
       (input) => {
         const parsed = SourceStatusInputSchema.parse(input);
         const result = sourceStatus(store, parsed);
+        return {
+          content: [
+            { type: 'text' as const, text: result.markdown },
+            { type: 'text' as const, text: JSON.stringify(result, null, 2) },
+          ],
+        };
+      },
+    );
+
+    server.registerTool(
+      'explain_risk',
+      {
+        title: 'Explain risk score',
+        description:
+          'Compute a profile-aware risk score for an advisory from local evidence ' +
+          '(CISA KEV, EPSS, advisory recency, source confidence). Returns each ' +
+          'positive driver and known uncertainty. Does not access the network.',
+        inputSchema: {
+          id: z.string().min(1).max(128),
+          profile: z.enum(RISK_PROFILE_NAMES).default('default').optional(),
+        },
+      },
+      (input) => {
+        const parsed = ExplainRiskInputSchema.parse(input);
+        const result = explainRisk(store, parsed);
         return {
           content: [
             { type: 'text' as const, text: result.markdown },
