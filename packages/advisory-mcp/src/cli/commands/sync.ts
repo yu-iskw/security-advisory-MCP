@@ -7,6 +7,7 @@ import { CISA_VULNRICHMENT_HOST, CisaVulnrichmentSource } from '../../sources/ci
 import { CVEPROJECT_HOST, CveProjectSource } from '../../sources/cveproject.js';
 import { FIRST_EPSS_HOST, FirstEpssSource } from '../../sources/first-epss.js';
 import { NVD_HOST, NvdFeedsSource } from '../../sources/nvd-feeds.js';
+import { OSSF_MALICIOUS_HOST, OssfMaliciousPackagesSource } from '../../sources/ossf-malicious-packages.js';
 import { OSV_GITHUB_HOST, OsvGithubSource } from '../../sources/osv-github.js';
 import { SourceRegistry } from '../../sources/registry.js';
 import { openStore, closeStore } from '../../store/db.js';
@@ -52,6 +53,7 @@ export async function runSync(options: SyncOptions): Promise<void> {
       CVEPROJECT_HOST,
       NVD_HOST,
       OSV_GITHUB_HOST,
+      OSSF_MALICIOUS_HOST,
     ],
   });
   const downloader = new HttpsDownloader(policy);
@@ -74,6 +76,9 @@ export async function runSync(options: SyncOptions): Promise<void> {
   }
   if (config.sources.osv?.enabled) {
     registry.register(new OsvGithubSource());
+  }
+  if (config.sources['ossf-malicious-packages']?.enabled) {
+    registry.register(new OssfMaliciousPackagesSource());
   }
 
   const adapters = registry.resolvePreset(options.preset);
