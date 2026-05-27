@@ -23,43 +23,59 @@ export type AdvisoryMcpConfig = z.infer<typeof configSchema>;
 export function loadConfig(configPath?: string): AdvisoryMcpConfig & AdvisoryMcpPaths {
   const paths = resolvePaths();
   const file = configPath ?? path.join(paths.configDir, 'config.json');
-  if (!fs.existsSync(file)) {
+  try {
+    const raw = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
+    const parsed = configSchema.parse(raw);
     return {
-      ...configSchema.parse({}),
-      ...paths,
+      ...parsed,
+      configDir: paths.configDir,
+      databasePath: expandHome(parsed.databasePath ?? paths.databasePath),
+      cachePath: expandHome(parsed.cachePath ?? paths.cachePath),
     };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return {
+        ...configSchema.parse({}),
+        ...paths,
+      };
+    }
+    throw error;
   }
-  const raw = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
-  const parsed = configSchema.parse(raw);
-  return {
-    ...parsed,
-    configDir: paths.configDir,
-    databasePath: expandHome(parsed.databasePath ?? paths.databasePath),
-    cachePath: expandHome(parsed.cachePath ?? paths.cachePath),
-  };
 }
 
 export function writeDefaultConfig(configDir: string): void {
   const file = path.join(configDir, 'config.json');
-  if (fs.existsSync(file)) {
+  try {
+    fs.accessSync(file, fs.constants.F_OK);
     return;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw error;
+    }
   }
   const paths = resolvePaths({ configDir });
   const payload = configSchema.parse({});
   fs.mkdirSync(configDir, { recursive: true });
-  fs.writeFileSync(
-    file,
-    JSON.stringify(
-      {
-        databasePath: paths.databasePath,
-        cachePath: paths.cachePath,
-        defaultPreset: payload.defaultPreset,
-        autoSyncIfEmpty: payload.autoSyncIfEmpty,
-        maxDownloadBytes: payload.maxDownloadBytes,
-        maxDecompressedBytes: payload.maxDecompressedBytes,
-      },
-      null,
-      2,
-    ),
-  );
+  try {
+    fs.writeFileSync(
+      file,
+      JSON.stringify(
+        {
+          databasePath: paths.databasePath,
+          cachePath: paths.cachePath,
+          defaultPreset: payload.defaultPreset,
+          autoSyncIfEmpty: payload.autoSyncIfEmpty,
+          maxDownloadBytes: payload.maxDownloadBytes,
+          maxDecompressedBytes: payload.maxDecompressedBytes,
+        },
+        null,
+        2,
+      ),
+      { flag: 'wx' },
+    );
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+      throw error;
+    }
+  }
 }
