@@ -3,6 +3,10 @@ import {
   findAdvisoriesByIds,
   listAdvisoryIdsForPackage,
 } from '../../store/repositories/advisory-repository.js';
+import {
+  isPackageVersionVulnerable,
+  versionMatchesVulnerableRanges,
+} from '../../util/version-range.js';
 
 import type { Advisory, AffectedPackage } from '../../schemas/advisory.js';
 import type { AdvisoryStore } from '../../store/db.js';
@@ -49,13 +53,21 @@ function isAffectedVersionVulnerable(affected: AffectedPackage[], version?: stri
     return false;
   }
   if (!version) {
-    return affected.some(
-      (p) =>
-        p.vulnerableRanges.length === 0 ||
-        p.vulnerableRanges.some((r) => r === '*' || r.length > 0),
+    return affected.some((pkg) =>
+      isPackageVersionVulnerable(undefined, pkg.vulnerableRanges, pkg.fixedVersions),
     );
   }
-  return affected.some((p) => p.vulnerableRanges.length > 0);
+  return affected.some((pkg) =>
+    isPackageVersionVulnerable(version, pkg.vulnerableRanges, pkg.fixedVersions),
+  );
+}
+
+function hasUnknownVersionMatch(affected: AffectedPackage[], version: string): boolean {
+  return affected.some(
+    (pkg) =>
+      versionMatchesVulnerableRanges(version, pkg.vulnerableRanges, pkg.fixedVersions) ===
+      'unknown',
+  );
 }
 
 function buildFindingsForPackage(
@@ -64,13 +76,17 @@ function buildFindingsForPackage(
   name: string,
   version: string | undefined,
   options: PackageAnalysisOptions,
-): PackageFinding[] {
+): { findings: PackageFinding[]; hadUnknownRange: boolean } {
   const findings: PackageFinding[] = [];
+  let hadUnknownRange = false;
   for (const advisory of advisories) {
     if (!options.includeMaliciousPackageReports && advisory.type === 'malicious-package') {
       continue;
     }
     const affected = matchingAffected(advisory, ecosystem, name);
+    if (version && hasUnknownVersionMatch(affected, version)) {
+      hadUnknownRange = true;
+    }
     if (!isAffectedVersionVulnerable(affected, version)) {
       continue;
     }
@@ -81,14 +97,19 @@ function buildFindingsForPackage(
       fixedVersions: affected.flatMap((p) => p.fixedVersions),
     });
   }
-  return findings;
+  return { findings, hadUnknownRange };
 }
 
-function uncertaintyForCoordinate(version?: string, matchedRows = 0, findings = 0): string[] {
+function uncertaintyForCoordinate(
+  version?: string,
+  matchedRows = 0,
+  findings = 0,
+  hadUnknownRange = false,
+): string[] {
   const uncertainty: string[] = [];
-  if (version) {
+  if (version && hadUnknownRange) {
     uncertainty.push(
-      'Semantic version range matching is not implemented; results are based on affected-package rows only.',
+      'Some advisories had affected-package rows with unparseable version ranges; those were omitted from version-specific results.',
     );
   }
   if (findings === 0 && matchedRows === 0) {
@@ -180,7 +201,7 @@ export function analyzePackageCoordinates(
     const advisories = ids
       .map((id) => advisoriesById.get(id))
       .filter((a): a is Advisory => a !== undefined);
-    const findings = buildFindingsForPackage(
+    const { findings, hadUnknownRange } = buildFindingsForPackage(
       advisories,
       coordinate.ecosystem,
       coordinate.name,
@@ -192,7 +213,12 @@ export function analyzePackageCoordinates(
       name: coordinate.name,
       version: coordinate.version,
       findings,
-      uncertainty: uncertaintyForCoordinate(coordinate.version, ids.length, findings.length),
+      uncertainty: uncertaintyForCoordinate(
+        coordinate.version,
+        ids.length,
+        findings.length,
+        hadUnknownRange,
+      ),
     });
   }
   return results;

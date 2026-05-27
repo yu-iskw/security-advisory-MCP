@@ -29,7 +29,7 @@ export function runDoctor(options: { databasePath?: string } = {}): DoctorReport
 
   checks.push({
     name: 'database-directory',
-    ok: fs.existsSync(paths.configDir) || true,
+    ok: fs.existsSync(paths.configDir),
     detail: paths.configDir,
   });
 

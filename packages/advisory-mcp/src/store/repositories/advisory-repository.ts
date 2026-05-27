@@ -1,5 +1,7 @@
 import { advisorySchema } from '../../schemas/advisory.js';
+import { buildFtsMatchQuery } from '../../util/fts-query.js';
 import { readNumberColumn, readStringColumn } from '../sql-rows.js';
+import { SQLITE_IN_CHUNK_SIZE, chunkArray } from '../sqlite-batch.js';
 
 import type { Advisory } from '../../schemas/advisory.js';
 import type { AdvisoryStore } from '../db.js';
@@ -123,18 +125,22 @@ export function findAdvisoriesByIds(store: AdvisoryStore, ids: string[]): Map<st
   if (unique.length === 0) {
     return map;
   }
-  const placeholders = unique.map(() => '?').join(',');
-  const rows = store.db
-    .prepare(`SELECT id, merged_json FROM advisories WHERE id IN (${placeholders})`)
-    .all(...unique);
-  for (const row of rows) {
-    const id = readStringColumn(row, 'id');
-    map.set(id, parseAdvisoryRow(row));
+
+  for (const chunk of chunkArray(unique, SQLITE_IN_CHUNK_SIZE)) {
+    const placeholders = chunk.map(() => '?').join(',');
+    const rows = store.db
+      .prepare(`SELECT id, merged_json FROM advisories WHERE id IN (${placeholders})`)
+      .all(...chunk);
+    for (const row of rows) {
+      const id = readStringColumn(row, 'id');
+      map.set(id, parseAdvisoryRow(row));
+    }
   }
   return map;
 }
 
 export function searchAdvisories(store: AdvisoryStore, query: string, limit: number): Advisory[] {
+  const matchQuery = buildFtsMatchQuery(query);
   const rows = store.db
     .prepare(
       `SELECT a.merged_json AS merged_json
@@ -143,7 +149,7 @@ export function searchAdvisories(store: AdvisoryStore, query: string, limit: num
        WHERE advisory_fts MATCH ?
        LIMIT ?`,
     )
-    .all(query.replace(/[^\w\-@.]+/g, ' '), limit);
+    .all(matchQuery, limit);
   return rows.map((r) => parseAdvisoryRow(r));
 }
 

@@ -28,11 +28,20 @@ export interface SyncEngineResult {
   durationMs: number;
 }
 
+interface PendingRawRecord {
+  id: string;
+  source: string;
+  sourceRecordId?: string;
+  fetchedAt: string;
+  sha256: string;
+  payload: Buffer;
+}
+
 export function runSyncEngine(options: SyncEngineOptions): SyncEngineResult {
   const started = Date.now();
   const sources = sourcesForPreset(options.preset);
-  const { sourceResults, records } = collectRecordsFromSources(options, sources);
-  const advisoriesUpserted = persistMergedRecords(options.store, records);
+  const { sourceResults, records, pendingRaw } = collectRecordsFromSources(options, sources);
+  const advisoriesUpserted = persistMergedRecords(options.store, records, pendingRaw);
   return {
     preset: options.preset,
     sources: sourceResults,
@@ -44,9 +53,14 @@ export function runSyncEngine(options: SyncEngineOptions): SyncEngineResult {
 function collectRecordsFromSources(
   options: SyncEngineOptions,
   sources: SourceDefinition[],
-): { sourceResults: SyncSourceResult[]; records: NormalizedRecord[] } {
+): {
+  sourceResults: SyncSourceResult[];
+  records: NormalizedRecord[];
+  pendingRaw: PendingRawRecord[];
+} {
   const sourceResults: SyncSourceResult[] = [];
   const records: NormalizedRecord[] = [];
+  const pendingRaw: PendingRawRecord[] = [];
 
   for (const source of sources) {
     const sourceStarted = Date.now();
@@ -56,7 +70,7 @@ function collectRecordsFromSources(
       records.push(...loaded);
       for (const record of loaded) {
         const payload = Buffer.from(JSON.stringify(record.evidence.normalizedJson));
-        storeRawRecord(options.store, {
+        pendingRaw.push({
           id: record.evidence.rawRef ?? hashPayload(payload),
           source: source.id,
           sourceRecordId: record.evidence.sourceRecordId,
@@ -94,12 +108,19 @@ function collectRecordsFromSources(
     }
   }
 
-  return { sourceResults, records };
+  return { sourceResults, records, pendingRaw };
 }
 
-function persistMergedRecords(store: AdvisoryStore, records: NormalizedRecord[]): number {
+function persistMergedRecords(
+  store: AdvisoryStore,
+  records: NormalizedRecord[],
+  pendingRaw: PendingRawRecord[],
+): number {
   const merged = mergeRecords(records);
   const mergeTx = store.db.transaction(() => {
+    for (const raw of pendingRaw) {
+      storeRawRecord(store, raw);
+    }
     for (const advisory of merged) {
       upsertAdvisory(store, advisory);
     }

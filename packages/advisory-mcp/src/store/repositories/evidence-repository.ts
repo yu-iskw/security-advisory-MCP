@@ -1,7 +1,11 @@
 import { evidenceSchema } from '../../schemas/evidence.js';
+import { readStringColumn } from '../sql-rows.js';
+import { SQLITE_IN_CHUNK_SIZE, chunkArray } from '../sqlite-batch.js';
 
 import type { Evidence } from '../../schemas/evidence.js';
 import type { AdvisoryStore } from '../db.js';
+
+const DEFAULT_RAW_PREVIEW_BYTES = 16_384;
 
 export function upsertEvidence(store: AdvisoryStore, evidence: Evidence): void {
   const parsed = evidenceSchema.parse(evidence);
@@ -42,6 +46,67 @@ export function listEvidenceForAdvisory(store: AdvisoryStore, advisoryId: string
     .prepare('SELECT normalized_json FROM evidence WHERE advisory_id = ? ORDER BY source')
     .all(advisoryId) as Array<{ normalized_json: string }>;
   return rows.map((r) => evidenceSchema.parse(JSON.parse(r.normalized_json)));
+}
+
+export function listEvidenceForAdvisoryIds(
+  store: AdvisoryStore,
+  advisoryIds: string[],
+): Map<string, Evidence[]> {
+  const map = new Map<string, Evidence[]>();
+  const unique = [...new Set(advisoryIds)];
+  for (const id of unique) {
+    map.set(id, []);
+  }
+  if (unique.length === 0) {
+    return map;
+  }
+
+  for (const chunk of chunkArray(unique, SQLITE_IN_CHUNK_SIZE)) {
+    const placeholders = chunk.map(() => '?').join(',');
+    const rows = store.db
+      .prepare(
+        `SELECT advisory_id, normalized_json FROM evidence WHERE advisory_id IN (${placeholders}) ORDER BY source`,
+      )
+      .all(...chunk) as Array<{ advisory_id: string; normalized_json: string }>;
+    for (const row of rows) {
+      const advisoryId = readStringColumn(row, 'advisory_id');
+      const list = map.get(advisoryId) ?? [];
+      list.push(evidenceSchema.parse(JSON.parse(row.normalized_json)));
+      map.set(advisoryId, list);
+    }
+  }
+  return map;
+}
+
+export interface RawRecordPreview {
+  id: string;
+  source: string;
+  sha256: string;
+  preview: string;
+  truncated: boolean;
+}
+
+export function getRawRecordPreview(
+  store: AdvisoryStore,
+  id: string,
+  maxBytes = DEFAULT_RAW_PREVIEW_BYTES,
+): RawRecordPreview | null {
+  const row = store.db
+    .prepare('SELECT source, sha256, payload FROM raw_records WHERE id = ?')
+    .get(id) as { source: string; sha256: string; payload: Buffer } | undefined;
+  if (!row) {
+    return null;
+  }
+  const payload = row.payload;
+  const truncated = payload.length > maxBytes;
+  const slice = truncated ? payload.subarray(0, maxBytes) : payload;
+  return {
+    id,
+    source: row.source,
+    sha256: row.sha256,
+    preview: slice.toString('utf8'),
+    truncated,
+  };
 }
 
 export function storeRawRecord(

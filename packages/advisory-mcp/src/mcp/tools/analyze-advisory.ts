@@ -4,7 +4,10 @@ import { computeRiskScore } from '../../risk/score.js';
 import { recommendationSchema, riskProfileNameSchema } from '../../schemas/risk.js';
 import { labelUntrustedQuote } from '../../security/content-sanitizer.js';
 import { findAdvisoryById } from '../../store/repositories/advisory-repository.js';
-import { listEvidenceForAdvisory } from '../../store/repositories/evidence-repository.js';
+import {
+  getRawRecordPreview,
+  listEvidenceForAdvisory,
+} from '../../store/repositories/evidence-repository.js';
 import { buildFreshnessSummary } from '../../store/repositories/freshness.js';
 
 import type { Advisory } from '../../schemas/advisory.js';
@@ -32,6 +35,28 @@ export function runAnalyzeAdvisory(store: AdvisoryStore, input: AnalyzeAdvisoryI
   const freshness = buildFreshnessSummary(store);
   const recommendations = buildRecommendations(advisory, risk.severity);
 
+  const rawRecords = input.includeRaw
+    ? evidence.flatMap((e) => {
+        if (!e.rawRef) {
+          return [];
+        }
+        const preview = getRawRecordPreview(store, e.rawRef);
+        if (!preview) {
+          return [];
+        }
+        return [
+          {
+            evidenceId: e.id,
+            rawRef: e.rawRef,
+            source: preview.source,
+            sha256: preview.sha256,
+            truncated: preview.truncated,
+            preview: preview.preview,
+          },
+        ];
+      })
+    : [];
+
   const structured = {
     advisory: summarizeAdvisory(advisory),
     risk,
@@ -45,6 +70,7 @@ export function runAnalyzeAdvisory(store: AdvisoryStore, input: AnalyzeAdvisoryI
           summary: e.summary,
         }))
       : [],
+    rawRecords,
     conflicts: advisory.sourceDisagreements,
     recommendations,
     freshness,
@@ -52,7 +78,7 @@ export function runAnalyzeAdvisory(store: AdvisoryStore, input: AnalyzeAdvisoryI
 
   const markdown = [
     `# ${advisory.canonicalId}`,
-    advisory.title ?? '',
+    advisory.title ? labelUntrustedQuote(advisory.title) : '',
     '',
     `**Risk:** ${risk.score}/100 (${risk.severity}) — profile \`${input.profile}\``,
     '',
@@ -60,6 +86,9 @@ export function runAnalyzeAdvisory(store: AdvisoryStore, input: AnalyzeAdvisoryI
     '',
     `Known exploited: ${advisory.kev ? 'yes' : 'no'}`,
     `Fix available: ${advisory.affected.some((p) => p.fixedVersions.length > 0) ? 'yes' : 'no'}`,
+    input.includeRaw && rawRecords.length > 0
+      ? `\n_Raw record previews: ${rawRecords.length} (see structured JSON)._`
+      : '',
   ].join('\n');
 
   return { structured, markdown };

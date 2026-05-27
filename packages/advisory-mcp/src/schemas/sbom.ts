@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { parsePurl } from './purl.js';
+
 export const sbomComponentSchema = z.object({
   name: z.string(),
   version: z.string().optional(),
@@ -69,6 +71,32 @@ function detectSbomFormat(json: unknown): 'cyclonedx' | 'spdx' {
   return 'cyclonedx';
 }
 
+function ecosystemFromPurl(purl: string | undefined): string | undefined {
+  if (!purl) {
+    return undefined;
+  }
+  return parsePurl(purl)?.type;
+}
+
+function ecosystemFromComponentType(type: string | undefined): string {
+  if (type === undefined) {
+    return 'generic';
+  }
+  switch (type.toLowerCase()) {
+    case 'library':
+    case 'application':
+      return 'generic';
+    case 'container':
+      return 'oci';
+    default:
+      return 'generic';
+  }
+}
+
+function resolveEcosystem(purl: string | undefined, type: string | undefined): string {
+  return ecosystemFromPurl(purl) ?? ecosystemFromComponentType(type);
+}
+
 function parseCycloneDx(json: unknown): SbomComponent[] {
   const parsed = cycloneDxSbomSchema.safeParse(json);
   if (!parsed.success || !parsed.data.components) {
@@ -78,7 +106,7 @@ function parseCycloneDx(json: unknown): SbomComponent[] {
     name: c.name,
     version: c.version,
     purl: c.purl,
-    ecosystem: c.purl ? undefined : 'generic',
+    ecosystem: resolveEcosystem(c.purl, c.type),
     type: c.type,
   }));
 }
@@ -90,11 +118,12 @@ function parseSpdx(json: unknown): SbomComponent[] {
   }
   return parsed.data.packages.map((pkg) => {
     const purlRef = pkg.externalRefs?.find((r) => r.referenceType === 'purl');
+    const purl = purlRef?.referenceLocator;
     return {
       name: pkg.name.replace(/^pkg:/, ''),
       version: pkg.versionInfo?.replace(/^v/, ''),
-      purl: purlRef?.referenceLocator,
-      ecosystem: 'generic',
+      purl,
+      ecosystem: resolveEcosystem(purl, undefined),
     };
   });
 }

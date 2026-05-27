@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 import { computeRiskScore } from '../../risk/score.js';
-import { findAdvisoryById } from '../../store/repositories/advisory-repository.js';
-import { listEvidenceForAdvisory } from '../../store/repositories/evidence-repository.js';
+import { findAdvisoriesByIds } from '../../store/repositories/advisory-repository.js';
+import { listEvidenceForAdvisoryIds } from '../../store/repositories/evidence-repository.js';
 
 import { runAnalyzePackage } from './analyze-package.js';
 
@@ -42,12 +42,17 @@ export function runPrioritize(store: AdvisoryStore, input: z.infer<typeof priori
     }
   }
 
-  const ranked = [...ids].map((id) => {
-    const advisory = findAdvisoryById(store, id);
+  const idList = [...ids];
+  const advisories = findAdvisoriesByIds(store, idList);
+  const evidenceByAdvisory = listEvidenceForAdvisoryIds(store, idList);
+
+  const ranked = idList.map((id) => {
+    const advisory =
+      advisories.get(id) ?? [...advisories.values()].find((a) => a.canonicalId === id);
     if (!advisory) {
-      return { id, score: 0, severity: 'none' as const };
+      return { id, score: 0, severity: 'none' as const, title: undefined };
     }
-    const evidence = listEvidenceForAdvisory(store, advisory.id);
+    const evidence = evidenceByAdvisory.get(advisory.id) ?? [];
     const risk = computeRiskScore(advisory, evidence, input.profile);
     return {
       id: advisory.canonicalId,

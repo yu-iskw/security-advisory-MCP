@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+import { computeRiskScore } from '../../risk/score.js';
+import { riskProfileNameSchema } from '../../schemas/risk.js';
+import { findAdvisoryById } from '../../store/repositories/advisory-repository.js';
+import { listEvidenceForAdvisory } from '../../store/repositories/evidence-repository.js';
+
 import {
   analyzePackageCoordinate,
   coordinateFromInput,
@@ -15,9 +20,7 @@ export const analyzePackageInputSchema = z
     name: z.string().optional(),
     version: z.string().optional(),
     includeMaliciousPackageReports: z.boolean().default(true),
-    profile: z
-      .enum(['default', 'application_dependency', 'container_image'])
-      .default('application_dependency'),
+    profile: riskProfileNameSchema.default('application_dependency'),
   })
   .refine((v) => Boolean(v.purl) || Boolean(v.ecosystem && v.name), {
     message: 'Provide purl or ecosystem+name',
@@ -32,6 +35,16 @@ export function runAnalyzePackage(
     includeMaliciousPackageReports: input.includeMaliciousPackageReports,
   });
 
+  let topRisk: ReturnType<typeof computeRiskScore> | null = null;
+  if (analysis.findings.length > 0) {
+    const topFinding = analysis.findings[0];
+    const advisory = findAdvisoryById(store, topFinding.advisoryId);
+    if (advisory) {
+      const evidence = listEvidenceForAdvisory(store, advisory.id);
+      topRisk = computeRiskScore(advisory, evidence, input.profile);
+    }
+  }
+
   return {
     structured: {
       ecosystem: analysis.ecosystem,
@@ -40,6 +53,7 @@ export function runAnalyzePackage(
       findings: analysis.findings,
       uncertainty: analysis.uncertainty,
       profile: input.profile,
+      topRisk,
     },
     markdown: formatPackageAnalysisMarkdown(analysis),
   };
