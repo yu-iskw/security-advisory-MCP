@@ -1,0 +1,44 @@
+{
+  "name": "advisory-mcp",
+  "version": "0.1.0",
+  "description": "Local-first security advisory MCP server. Syncs public, keyless vulnerability feeds into a local SQLite store and serves them via the Model Context Protocol.",
+  "keywords": [
+    "mcp",
+    "security",
+    "advisory",
+    "cve",
+    "vulnerability"
+  ],
+  "license": "Apache-2.0",
+  "author": "",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "advisory-mcp": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=24.13.0"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "commander": "^13.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0"
+  }
+}

@@ -11,6 +11,7 @@ blockExoticSubdeps: true # explicit; matches v11 default
 allowBuilds:
   esbuild: true
   unrs-resolver: true
+  better-sqlite3: true
 
 # Migrated from package.json#pnpm (pnpm 11 no longer reads that field)
 overrides:
