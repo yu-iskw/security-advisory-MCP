@@ -8,6 +8,7 @@ import { analyzeAdvisory, AnalyzeAdvisoryInputSchema } from './tools/analyze-adv
 import { analyzePackage, AnalyzePackageInputSchema } from './tools/analyze-package.js';
 import { explainRisk, ExplainRiskInputSchema } from './tools/explain-risk.js';
 import { ping } from './tools/ping.js';
+import { scanSbom, ScanSbomInputSchema } from './tools/scan-sbom.js';
 import { searchAdvisories, SearchAdvisoriesInputSchema } from './tools/search-advisories.js';
 import { sourceStatus, SourceStatusInputSchema } from './tools/source-status.js';
 
@@ -175,6 +176,36 @@ export function createMcpServer(options: CreateMcpServerOptions = {}): McpServer
       (input) => {
         const parsed = AnalyzePackageInputSchema.parse(input);
         const result = analyzePackage(store, parsed);
+        return {
+          content: [
+            { type: 'text' as const, text: result.markdown },
+            { type: 'text' as const, text: JSON.stringify(result, null, 2) },
+          ],
+        };
+      },
+    );
+
+    server.registerTool(
+      'scan_sbom',
+      {
+        title: 'Scan SBOM',
+        description:
+          'Scan a CycloneDX or SPDX JSON SBOM against the local advisory store. ' +
+          'Returns per-component matches with risk scores. Does not access the network.',
+        inputSchema: {
+          sbomJson: z.string(),
+          format: z.enum(['auto', 'cyclonedx', 'spdx']).default('auto').optional(),
+          profile: z
+            .enum(['default', 'internet_exposed', 'application_dependency', 'container_image'])
+            .default('application_dependency')
+            .optional(),
+          includeDevDependencies: z.boolean().default(false).optional(),
+          limit: z.number().int().min(1).max(500).default(100).optional(),
+        },
+      },
+      (input) => {
+        const parsed = ScanSbomInputSchema.parse(input);
+        const result = scanSbom(store, parsed);
         return {
           content: [
             { type: 'text' as const, text: result.markdown },

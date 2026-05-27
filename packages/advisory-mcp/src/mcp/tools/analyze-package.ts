@@ -100,7 +100,18 @@ function resolveQuery(input: AnalyzePackageInput): {
   if (input.purl) {
     const p = parsePurl(input.purl);
     const eco = canonicalEcosystem(p.type) ?? p.type;
-    const name = p.namespace ? `${p.namespace}/${p.name}` : p.name;
+    // OSV uses ecosystem-specific delimiters:
+    //   - Maven: groupId:artifactId
+    //   - go / composer: namespace/name
+    //   - npm scoped: @scope/name
+    let name: string;
+    if (p.namespace !== undefined) {
+      if (eco === 'maven') name = `${p.namespace}:${p.name}`;
+      else if (eco === 'npm' && p.namespace.startsWith('@')) name = `${p.namespace}/${p.name}`;
+      else name = `${p.namespace}/${p.name}`;
+    } else {
+      name = p.name;
+    }
     return { ecosystem: eco, name, version: p.version ?? input.version };
   }
   const eco = canonicalEcosystem(input.ecosystem ?? '') ?? (input.ecosystem ?? '');
