@@ -8,6 +8,7 @@ import { analyzeAdvisory, AnalyzeAdvisoryInputSchema } from './tools/analyze-adv
 import { analyzePackage, AnalyzePackageInputSchema } from './tools/analyze-package.js';
 import { explainRisk, ExplainRiskInputSchema } from './tools/explain-risk.js';
 import { ping } from './tools/ping.js';
+import { prioritize, PrioritizeInputSchema } from './tools/prioritize.js';
 import { scanSbom, ScanSbomInputSchema } from './tools/scan-sbom.js';
 import { searchAdvisories, SearchAdvisoriesInputSchema } from './tools/search-advisories.js';
 import { sourceStatus, SourceStatusInputSchema } from './tools/source-status.js';
@@ -206,6 +207,42 @@ export function createMcpServer(options: CreateMcpServerOptions = {}): McpServer
       (input) => {
         const parsed = ScanSbomInputSchema.parse(input);
         const result = scanSbom(store, parsed);
+        return {
+          content: [
+            { type: 'text' as const, text: result.markdown },
+            { type: 'text' as const, text: JSON.stringify(result, null, 2) },
+          ],
+        };
+      },
+    );
+
+    server.registerTool(
+      'prioritize',
+      {
+        title: 'Prioritize findings',
+        description:
+          'Rank a mixed list of advisory IDs and/or packages by profile-aware ' +
+          'risk score. Returns a deduplicated, sorted list. Does not access the ' +
+          'network.',
+        inputSchema: {
+          advisoryIds: z.array(z.string().min(1).max(128)).max(500).optional(),
+          packages: z
+            .array(
+              z.object({
+                purl: z.string().optional(),
+                ecosystem: z.string().optional(),
+                name: z.string().optional(),
+                version: z.string().optional(),
+              }),
+            )
+            .max(500)
+            .optional(),
+          profile: z.enum(RISK_PROFILE_NAMES).default('default').optional(),
+        },
+      },
+      (input) => {
+        const parsed = PrioritizeInputSchema.parse(input);
+        const result = prioritize(store, parsed);
         return {
           content: [
             { type: 'text' as const, text: result.markdown },
