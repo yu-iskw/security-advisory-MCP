@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-import { analyzePackageCoordinate, coordinateFromInput } from './package-analysis.js';
+import {
+  analyzePackageCoordinate,
+  coordinateFromInput,
+  formatPackageAnalysisMarkdown,
+} from './package-analysis.js';
 
 import type { AdvisoryStore } from '../../store/db.js';
 
@@ -28,19 +32,6 @@ export function runAnalyzePackage(
     includeMaliciousPackageReports: input.includeMaliciousPackageReports,
   });
 
-  const markdown = [
-    `# Package analysis: ${analysis.ecosystem}/${analysis.name}${analysis.version ? `@${analysis.version}` : ''}`,
-    '',
-    analysis.findings.length === 0
-      ? 'No matching advisories in local database (affected_packages).'
-      : analysis.findings
-          .map((f) => `- ${f.advisoryId}: ${f.title ?? 'untitled'} (vulnerable=${f.vulnerable})`)
-          .join('\n'),
-    analysis.uncertainty.length > 0
-      ? `\n## Uncertainty\n${analysis.uncertainty.map((u) => `- ${u}`).join('\n')}`
-      : '',
-  ].join('\n');
-
   return {
     structured: {
       ecosystem: analysis.ecosystem,
@@ -50,6 +41,6 @@ export function runAnalyzePackage(
       uncertainty: analysis.uncertainty,
       profile: input.profile,
     },
-    markdown,
+    markdown: formatPackageAnalysisMarkdown(analysis),
   };
 }

@@ -45,14 +45,6 @@ export function loadConfig(configPath?: string): AdvisoryMcpConfig & AdvisoryMcp
 
 export function writeDefaultConfig(configDir: string): void {
   const file = path.join(configDir, 'config.json');
-  try {
-    fs.accessSync(file, fs.constants.F_OK);
-    return;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-      throw error;
-    }
-  }
   const paths = resolvePaths({ configDir });
   const payload = configSchema.parse({});
   fs.mkdirSync(configDir, { recursive: true });

@@ -15,7 +15,7 @@ export function sanitizeAdvisoryText(text: string): string {
       continue;
     }
 
-    if (text[index] === '<') {
+    if (text.charAt(index) === '<') {
       const tagEnd = text.indexOf('>', index);
       if (tagEnd === -1) {
         index += 1;
@@ -25,7 +25,7 @@ export function sanitizeAdvisoryText(text: string): string {
       continue;
     }
 
-    out += text[index];
+    out += text.charAt(index);
     index += 1;
   }
 

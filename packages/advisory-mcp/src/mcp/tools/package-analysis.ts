@@ -4,7 +4,7 @@ import {
   listAdvisoryIdsForPackage,
 } from '../../store/repositories/advisory-repository.js';
 
-import type { Advisory } from '../../schemas/advisory.js';
+import type { Advisory, AffectedPackage } from '../../schemas/advisory.js';
 import type { AdvisoryStore } from '../../store/db.js';
 
 export interface PackageCoordinate {
@@ -37,20 +37,14 @@ function packageLookupKey(ecosystem: string, name: string): string {
   return `${ecosystem}|${name}`;
 }
 
-function matchingAffected(advisory: Advisory, ecosystem: string, name: string) {
+function matchingAffected(advisory: Advisory, ecosystem: string, name: string): AffectedPackage[] {
   const lowerName = name.toLowerCase();
   return advisory.affected.filter(
     (p) => p.ecosystem === ecosystem && p.name.toLowerCase() === lowerName,
   );
 }
 
-function mightBeVulnerable(
-  advisory: Advisory,
-  ecosystem: string,
-  name: string,
-  version?: string,
-): boolean {
-  const affected = matchingAffected(advisory, ecosystem, name);
+function isAffectedVersionVulnerable(affected: AffectedPackage[], version?: string): boolean {
   if (affected.length === 0) {
     return false;
   }
@@ -76,14 +70,15 @@ function buildFindingsForPackage(
     if (!options.includeMaliciousPackageReports && advisory.type === 'malicious-package') {
       continue;
     }
-    if (!mightBeVulnerable(advisory, ecosystem, name, version)) {
+    const affected = matchingAffected(advisory, ecosystem, name);
+    if (!isAffectedVersionVulnerable(affected, version)) {
       continue;
     }
     findings.push({
       advisoryId: advisory.canonicalId,
       title: advisory.title,
       vulnerable: true,
-      fixedVersions: matchingAffected(advisory, ecosystem, name).flatMap((p) => p.fixedVersions),
+      fixedVersions: affected.flatMap((p) => p.fixedVersions),
     });
   }
   return findings;
@@ -120,6 +115,21 @@ export function coordinateFromInput(input: {
     name,
     version,
   };
+}
+
+export function formatPackageAnalysisMarkdown(analysis: PackageAnalysisResult): string {
+  return [
+    `# Package analysis: ${analysis.ecosystem}/${analysis.name}${analysis.version ? `@${analysis.version}` : ''}`,
+    '',
+    analysis.findings.length === 0
+      ? 'No matching advisories in local database (affected_packages).'
+      : analysis.findings
+          .map((f) => `- ${f.advisoryId}: ${f.title ?? 'untitled'} (vulnerable=${f.vulnerable})`)
+          .join('\n'),
+    analysis.uncertainty.length > 0
+      ? `\n## Uncertainty\n${analysis.uncertainty.map((u) => `- ${u}`).join('\n')}`
+      : '',
+  ].join('\n');
 }
 
 export function analyzePackageCoordinate(
