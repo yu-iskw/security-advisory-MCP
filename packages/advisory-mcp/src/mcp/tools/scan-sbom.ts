@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
 import { parseSbomComponents } from '../../schemas/sbom.js';
-import { runAnalyzePackage } from './analyze-package.js';
-import type { AdvisoryStore } from '../../store/db.js';
 import { DEFAULT_MAX_SBOM_BYTES } from '../../security/limits.js';
+
+import { runAnalyzePackage } from './analyze-package.js';
+
+import type { AdvisoryStore } from '../../store/db.js';
 
 export const scanSbomInputSchema = z.object({
   sbomJson: z.string().max(DEFAULT_MAX_SBOM_BYTES),
@@ -16,9 +18,6 @@ export const scanSbomInputSchema = z.object({
 });
 
 export function runScanSbom(store: AdvisoryStore, input: z.infer<typeof scanSbomInputSchema>) {
-  if (input.sbomJson.length > DEFAULT_MAX_SBOM_BYTES) {
-    throw new Error('SBOM exceeds maximum allowed size');
-  }
   const json = JSON.parse(input.sbomJson) as unknown;
   let components = parseSbomComponents(json, input.format);
   if (!input.includeDevDependencies) {

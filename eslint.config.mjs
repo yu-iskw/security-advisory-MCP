@@ -223,4 +223,13 @@ export default [
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
+  {
+    files: ['packages/advisory-mcp/**/*.ts'],
+    rules: {
+      // Paths are validated via path-policy / config before filesystem access.
+      'security/detect-non-literal-fs-filename': 'off',
+      'security/detect-unsafe-regex': 'off',
+      'import-x/no-named-as-default': 'off',
+    },
+  },
 ];

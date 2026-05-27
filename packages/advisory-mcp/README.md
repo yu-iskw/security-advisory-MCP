@@ -13,13 +13,13 @@ Local-first security advisory MCP server ([RFC 0001](docs/rfc/0001-local-first-a
 
 ## Quick start
 
-```bash
+````bash
 pnpm install
 pnpm --filter advisory-mcp build
 advisory-mcp init
 advisory-mcp sync --preset core --fixtures packages/advisory-mcp/tests/fixtures
 advisory-mcp serve --transport stdio
-```
+```text
 
 For production sync without `--fixtures`, configure cache paths and allowlisted feed URLs (see `src/security/url-policy.ts`).
 
@@ -34,7 +34,7 @@ For production sync without `--fixtures`, configure cache paths and allowlisted 
     }
   }
 }
-```
+```text
 
 ## Development
 
@@ -42,12 +42,12 @@ For production sync without `--fixtures`, configure cache paths and allowlisted 
 pnpm --filter advisory-mcp test
 pnpm --filter advisory-mcp test:unit
 pnpm --filter advisory-mcp test:integration
-```
+```text
 
 ## Architecture
 
-```
+```text
 fixtures/network → sync engine → merge → SQLite → MCP tools (read-only, offline)
-```
+````
 
 MCP tool calls never perform arbitrary network I/O.

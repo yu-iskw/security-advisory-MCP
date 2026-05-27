@@ -9,8 +9,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { runInit } from '../../src/cli/commands/init.js';
 import { runSync } from '../../src/cli/commands/sync.js';
 import { createMcpServer } from '../../src/mcp/server.js';
-import { getBundledFixturesPath } from '../../src/util/fixtures-path.js';
 import { openStore } from '../../src/store/db.js';
+import { getBundledFixturesPath } from '../../src/util/fixtures-path.js';
 
 const tempDirs: string[] = [];
 

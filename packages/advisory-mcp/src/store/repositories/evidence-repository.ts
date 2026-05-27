@@ -1,5 +1,6 @@
-import type { Evidence } from '../../schemas/evidence.js';
 import { evidenceSchema } from '../../schemas/evidence.js';
+
+import type { Evidence } from '../../schemas/evidence.js';
 import type { AdvisoryStore } from '../db.js';
 
 export function upsertEvidence(store: AdvisoryStore, evidence: Evidence): void {

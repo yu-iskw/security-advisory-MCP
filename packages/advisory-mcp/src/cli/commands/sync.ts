@@ -1,6 +1,6 @@
+import { runSyncEngine, resolveFixtureRoot } from '../../ingest/sync-engine.js';
 import { syncPresetSchema, type SyncPreset } from '../../schemas/source.js';
 import { assertStoreReady, openStore, seedCoreSourceStates } from '../../store/db.js';
-import { runSyncEngine, resolveFixtureRoot } from '../../ingest/sync-engine.js';
 import { getBundledFixturesPath } from '../../util/fixtures-path.js';
 import { resolvePaths } from '../../util/paths.js';
 

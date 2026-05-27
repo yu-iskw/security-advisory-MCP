@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { z } from 'zod';
 
 import { DEFAULT_MAX_DECOMPRESSED_BYTES, DEFAULT_MAX_DOWNLOAD_BYTES } from '../security/limits.js';
+
 import { expandHome, resolvePaths, type AdvisoryMcpPaths } from './paths.js';
 
 const configSchema = z.object({

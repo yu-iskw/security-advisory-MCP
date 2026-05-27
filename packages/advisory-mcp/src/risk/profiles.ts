@@ -66,3 +66,24 @@ export const PROFILE_WEIGHTS: Record<RiskProfileName, ProfileWeights> = {
     evidenceConfidence: 0.4,
   },
 };
+
+export function getProfileWeights(name: RiskProfileName): ProfileWeights {
+  switch (name) {
+    case 'default':
+      return PROFILE_WEIGHTS.default;
+    case 'internet_exposed':
+      return PROFILE_WEIGHTS.internet_exposed;
+    case 'application_dependency':
+      return PROFILE_WEIGHTS.application_dependency;
+    case 'container_image':
+      return PROFILE_WEIGHTS.container_image;
+    case 'executive':
+      return PROFILE_WEIGHTS.executive;
+    case 'research':
+      return PROFILE_WEIGHTS.research;
+    default: {
+      const _exhaustive: never = name;
+      return _exhaustive;
+    }
+  }
+}

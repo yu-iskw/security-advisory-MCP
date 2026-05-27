@@ -1,6 +1,6 @@
-import type { SyncPreset, SourceId } from '../schemas/source.js';
-import type { TrustTier } from '../schemas/evidence.js';
 import type { NormalizedRecord } from '../ingest/merger.js';
+import type { TrustTier } from '../schemas/evidence.js';
+import type { SyncPreset, SourceId } from '../schemas/source.js';
 
 export interface SourceDefinition {
   id: SourceId;

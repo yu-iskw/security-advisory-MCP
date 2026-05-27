@@ -1,11 +1,12 @@
-import { countAdvisories } from '../../store/repositories/advisory-repository.js';
-import { serveStdio } from '../../mcp/transports/stdio.js';
 import { serveHttp } from '../../mcp/transports/http.js';
-import { runSync } from './sync.js';
+import { serveStdio } from '../../mcp/transports/stdio.js';
 import { DatabaseNotInitializedError, isStoreInitialized, openStore } from '../../store/db.js';
-import { getBundledFixturesPath } from '../../util/fixtures-path.js';
+import { countAdvisories } from '../../store/repositories/advisory-repository.js';
 import { loadConfig } from '../../util/config.js';
+import { getBundledFixturesPath } from '../../util/fixtures-path.js';
 import { resolvePaths } from '../../util/paths.js';
+
+import { runSync } from './sync.js';
 
 export interface ServeOptions {
   transport: 'stdio' | 'http';

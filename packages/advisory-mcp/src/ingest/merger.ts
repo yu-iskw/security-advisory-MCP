@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
 
+import { classifyAdvisoryId, normalizeAdvisoryId, selectCanonicalId } from '../util/advisory-id.js';
+
 import type { Advisory, AffectedPackage, EvidenceConflict } from '../schemas/advisory.js';
 import type { Evidence } from '../schemas/evidence.js';
-import { classifyAdvisoryId, normalizeAdvisoryId, selectCanonicalId } from '../util/advisory-id.js';
 import type { SourceId } from '../schemas/source.js';
 
 export interface NormalizedRecord {
@@ -28,86 +29,104 @@ export function mergeRecords(records: NormalizedRecord[]): Advisory[] {
   return merged;
 }
 
-function mergeGroup(canonicalId: string, group: NormalizedRecord[]): Advisory {
-  const aliases = new Set<string>();
-  const affected: AffectedPackage[] = [];
-  const cwes = new Set<string>();
-  const cvss: Advisory['cvss'] = [];
-  const references: Advisory['references'] = [];
-  const conflicts: EvidenceConflict[] = [];
-  let title: string | undefined;
-  let description: string | undefined;
-  let publishedAt: string | undefined;
-  let modifiedAt: string | undefined;
-  let epss = undefined;
-  let kev = undefined;
-  let ssvc = undefined;
+interface MergeAccumulator {
+  aliases: Set<string>;
+  affected: AffectedPackage[];
+  cwes: Set<string>;
+  cvss: Advisory['cvss'];
+  references: Advisory['references'];
+  title?: string;
+  description?: string;
+  publishedAt?: string;
+  modifiedAt?: string;
+  epss?: Advisory['epss'];
+  kev?: Advisory['kev'];
+  ssvc?: Advisory['ssvc'];
+}
+
+function accumulateRecords(group: NormalizedRecord[]): MergeAccumulator {
+  const acc: MergeAccumulator = {
+    aliases: new Set<string>(),
+    affected: [],
+    cwes: new Set<string>(),
+    cvss: [],
+    references: [],
+  };
 
   for (const item of group) {
     for (const a of item.aliases) {
-      aliases.add(a);
+      acc.aliases.add(a);
     }
-    aliases.add(item.advisoryId);
+    acc.aliases.add(item.advisoryId);
     const adv = item.advisory;
-    if (adv.title && !title) {
-      title = adv.title;
+    if (adv.title && !acc.title) {
+      acc.title = adv.title;
     }
-    if (adv.description && !description) {
-      description = adv.description;
+    if (adv.description && !acc.description) {
+      acc.description = adv.description;
     }
-    publishedAt = earliest(publishedAt, adv.publishedAt);
-    modifiedAt = latest(modifiedAt, adv.modifiedAt);
+    acc.publishedAt = earliest(acc.publishedAt, adv.publishedAt);
+    acc.modifiedAt = latest(acc.modifiedAt, adv.modifiedAt);
     if (adv.affected) {
-      affected.push(...adv.affected);
+      acc.affected.push(...adv.affected);
     }
     for (const c of adv.cwes ?? []) {
-      cwes.add(c);
+      acc.cwes.add(c);
     }
     if (adv.cvss) {
-      cvss.push(...adv.cvss);
+      acc.cvss.push(...adv.cvss);
     }
     if (adv.references) {
-      references.push(...adv.references);
+      acc.references.push(...adv.references);
     }
-    epss = adv.epss ?? epss;
-    kev = adv.kev ?? kev;
-    ssvc = adv.ssvc ?? ssvc;
+    acc.epss = adv.epss ?? acc.epss;
+    acc.kev = adv.kev ?? acc.kev;
+    acc.ssvc = adv.ssvc ?? acc.ssvc;
   }
 
-  const isMalicious = group.some(
-    (g) => (g.advisory as { type?: string }).type === 'malicious-package',
-  );
-  const type = isMalicious
-    ? 'malicious-package'
-    : classifyAdvisoryId(canonicalId) === 'cve'
-      ? 'cve'
-      : classifyAdvisoryId(canonicalId) === 'ghsa'
-        ? 'ghsa'
-        : classifyAdvisoryId(canonicalId) === 'osv'
-          ? 'osv'
-          : 'other';
+  return acc;
+}
 
-  const versionConflicts = detectVersionConflicts(affected);
-  conflicts.push(...versionConflicts);
+function resolveMergedType(canonicalId: string, group: NormalizedRecord[]): Advisory['type'] {
+  if (group.some((g) => (g.advisory as { type?: string }).type === 'malicious-package')) {
+    return 'malicious-package';
+  }
+  const classified = classifyAdvisoryId(canonicalId);
+  if (classified === 'cve') {
+    return 'cve';
+  }
+  if (classified === 'ghsa') {
+    return 'ghsa';
+  }
+  if (classified === 'osv') {
+    return 'osv';
+  }
+  return 'other';
+}
+
+function mergeGroup(canonicalId: string, group: NormalizedRecord[]): Advisory {
+  const acc = accumulateRecords(group);
+  const type = resolveMergedType(canonicalId, group);
+  const conflicts = detectVersionConflicts(acc.affected);
 
   return {
     id: normalizeAdvisoryId(canonicalId),
     canonicalId: normalizeAdvisoryId(canonicalId),
     type,
-    aliases: [...aliases].filter(
+    aliases: [...acc.aliases].filter(
       (a) => normalizeAdvisoryId(a) !== normalizeAdvisoryId(canonicalId),
     ),
-    title,
-    description,
-    publishedAt,
-    modifiedAt,
-    affected: dedupeAffected(affected),
-    cwes: [...cwes],
-    cvss,
-    epss,
-    kev,
-    ssvc,
-    references,
+    title: acc.title,
+    description: acc.description,
+    publishedAt: acc.publishedAt,
+    modifiedAt: acc.modifiedAt,
+    affected: dedupeAffected(acc.affected),
+    cwes: [...acc.cwes],
+    cvss: acc.cvss,
+    epss: acc.epss,
+    kev: acc.kev,
+    ssvc: acc.ssvc,
+    references: acc.references,
     sourceDisagreements: conflicts,
   };
 }

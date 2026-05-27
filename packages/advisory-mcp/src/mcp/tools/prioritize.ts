@@ -1,10 +1,12 @@
 import { z } from 'zod';
 
+import { computeRiskScore } from '../../risk/score.js';
 import { findAdvisoryById } from '../../store/repositories/advisory-repository.js';
 import { listEvidenceForAdvisory } from '../../store/repositories/evidence-repository.js';
-import type { AdvisoryStore } from '../../store/db.js';
-import { computeRiskScore } from '../../risk/score.js';
+
 import { runAnalyzePackage } from './analyze-package.js';
+
+import type { AdvisoryStore } from '../../store/db.js';
 
 export const prioritizeInputSchema = z.object({
   advisoryIds: z.array(z.string()).max(500).optional(),

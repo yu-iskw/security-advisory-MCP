@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
-import { searchAdvisories as searchDb } from '../../store/repositories/advisory-repository.js';
-import type { AdvisoryStore } from '../../store/db.js';
 import { computeRiskScore } from '../../risk/score.js';
+import { searchAdvisories as searchDb } from '../../store/repositories/advisory-repository.js';
 import { listEvidenceForAdvisory } from '../../store/repositories/evidence-repository.js';
+
+import type { AdvisoryStore } from '../../store/db.js';
 
 export const searchAdvisoriesInputSchema = z.object({
   query: z.string().min(1).max(200),

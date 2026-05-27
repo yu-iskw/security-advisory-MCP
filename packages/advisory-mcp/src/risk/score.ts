@@ -1,14 +1,15 @@
+import { getProfileWeights } from './profiles.js';
+
 import type { Advisory } from '../schemas/advisory.js';
 import type { Evidence } from '../schemas/evidence.js';
 import type { RiskDriver, RiskProfileName, RiskResult } from '../schemas/risk.js';
-import { PROFILE_WEIGHTS } from './profiles.js';
 
 export function computeRiskScore(
   advisory: Advisory,
   evidence: Evidence[],
   profile: RiskProfileName,
 ): RiskResult {
-  const weights = PROFILE_WEIGHTS[profile];
+  const weights = getProfileWeights(profile);
   const drivers: RiskDriver[] = [];
   const uncertainty: string[] = [];
 

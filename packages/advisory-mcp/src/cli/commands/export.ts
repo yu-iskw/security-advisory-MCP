@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 
+import { openStore } from '../../store/db.js';
 import { countAdvisories } from '../../store/repositories/advisory-repository.js';
 import { buildSourceStatusSummary } from '../../store/repositories/source-state-repository.js';
-import { openStore } from '../../store/db.js';
 import { resolvePaths } from '../../util/paths.js';
 
 export function runExport(options: {

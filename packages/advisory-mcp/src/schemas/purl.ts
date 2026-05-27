@@ -31,7 +31,7 @@ export function parsePurl(purl: string): ParsedPurl | null {
     namespace = nsOrName;
     name = maybeName;
   } else {
-    name = nsOrName ?? '';
+    name = nsOrName;
   }
   const qualifiers: Record<string, string> = {};
   if (qualifiersRaw) {
@@ -46,9 +46,9 @@ export function parsePurl(purl: string): ParsedPurl | null {
     type: type.toLowerCase(),
     namespace,
     name,
-    version: version ?? undefined,
+    version: version || undefined,
     qualifiers: Object.keys(qualifiers).length > 0 ? qualifiers : undefined,
-    subpath: subpath ?? undefined,
+    subpath: subpath || undefined,
     canonical: trimmed,
   });
 }

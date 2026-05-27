@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Advisory } from '../../src/schemas/advisory.js';
 import { computeRiskScore } from '../../src/risk/score.js';
+
+import type { Advisory } from '../../src/schemas/advisory.js';
 
 const baseAdvisory: Advisory = {
   id: 'CVE-2021-44228',

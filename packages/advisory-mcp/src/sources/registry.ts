@@ -1,5 +1,5 @@
-import type { SyncPreset, SourceId } from '../schemas/source.js';
 import type { SourceDefinition } from './source.js';
+import type { SyncPreset, SourceId } from '../schemas/source.js';
 
 export const SOURCE_DEFINITIONS: SourceDefinition[] = [
   {
@@ -134,8 +134,29 @@ PRESET_SOURCES.all = [
 
 PRESET_SOURCES.research = [...PRESET_SOURCES.all];
 
+function sourceIdsForPreset(preset: SyncPreset): readonly SourceId[] {
+  switch (preset) {
+    case 'core':
+      return PRESET_SOURCES.core;
+    case 'packages':
+      return PRESET_SOURCES.packages;
+    case 'ecosystems':
+      return PRESET_SOURCES.ecosystems;
+    case 'context':
+      return PRESET_SOURCES.context;
+    case 'all':
+      return PRESET_SOURCES.all;
+    case 'research':
+      return PRESET_SOURCES.research;
+    default: {
+      const _exhaustive: never = preset;
+      return _exhaustive;
+    }
+  }
+}
+
 export function sourcesForPreset(preset: SyncPreset): SourceDefinition[] {
-  const ids = new Set(PRESET_SOURCES[preset]);
+  const ids = new Set(sourceIdsForPreset(preset));
   return SOURCE_DEFINITIONS.filter((s) => ids.has(s.id));
 }
 

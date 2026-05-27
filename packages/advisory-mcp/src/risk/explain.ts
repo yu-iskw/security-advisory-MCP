@@ -1,16 +1,17 @@
+import { getProfileWeights, type ProfileWeights } from './profiles.js';
+import { computeRiskScore } from './score.js';
+
 import type { Advisory } from '../schemas/advisory.js';
 import type { Evidence } from '../schemas/evidence.js';
 import type { RiskProfileName, RiskResult } from '../schemas/risk.js';
-import { PROFILE_WEIGHTS } from './profiles.js';
-import { computeRiskScore } from './score.js';
 
 export function explainRisk(
   advisory: Advisory,
   evidence: Evidence[],
   profile: RiskProfileName,
-): { risk: RiskResult; weights: (typeof PROFILE_WEIGHTS)[RiskProfileName]; markdown: string } {
+): { risk: RiskResult; weights: ProfileWeights; markdown: string } {
   const risk = computeRiskScore(advisory, evidence, profile);
-  const weights = PROFILE_WEIGHTS[profile];
+  const weights = getProfileWeights(profile);
   const lines = [
     `# Risk explanation: ${advisory.canonicalId}`,
     '',

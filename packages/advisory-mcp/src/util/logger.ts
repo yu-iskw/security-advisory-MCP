@@ -1,9 +1,9 @@
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface LogEvent {
+  [key: string]: unknown;
   level: LogLevel;
   event: string;
-  [key: string]: unknown;
 }
 
 export function logEvent(event: LogEvent): void {

@@ -7,9 +7,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { runInit } from '../../src/cli/commands/init.js';
 import { runSync } from '../../src/cli/commands/sync.js';
 import { runAnalyzeAdvisory } from '../../src/mcp/tools/analyze-advisory.js';
-import { getBundledFixturesPath } from '../../src/util/fixtures-path.js';
 import { openStore } from '../../src/store/db.js';
 import { countAdvisories } from '../../src/store/repositories/advisory-repository.js';
+import { getBundledFixturesPath } from '../../src/util/fixtures-path.js';
 
 const tempDirs: string[] = [];
 

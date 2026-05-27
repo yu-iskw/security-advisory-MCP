@@ -1,7 +1,8 @@
+import fs from 'node:fs';
+
+import { openStore, seedCoreSourceStates } from '../../store/db.js';
 import { writeDefaultConfig } from '../../util/config.js';
 import { resolvePaths } from '../../util/paths.js';
-import { openStore, seedCoreSourceStates } from '../../store/db.js';
-import fs from 'node:fs';
 
 export interface InitOptions {
   databasePath?: string;

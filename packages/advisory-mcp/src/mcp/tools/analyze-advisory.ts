@@ -1,15 +1,15 @@
 import { z } from 'zod';
 
+import { computeRiskScore } from '../../risk/score.js';
+import { recommendationSchema, riskProfileNameSchema } from '../../schemas/risk.js';
 import { labelUntrustedQuote } from '../../security/content-sanitizer.js';
-import type { Advisory } from '../../schemas/advisory.js';
-import type { Recommendation } from '../../schemas/risk.js';
-import { recommendationSchema } from '../../schemas/risk.js';
 import { findAdvisoryById } from '../../store/repositories/advisory-repository.js';
 import { listEvidenceForAdvisory } from '../../store/repositories/evidence-repository.js';
 import { buildFreshnessSummary } from '../../store/repositories/freshness.js';
+
+import type { Advisory } from '../../schemas/advisory.js';
+import type { Recommendation } from '../../schemas/risk.js';
 import type { AdvisoryStore } from '../../store/db.js';
-import { computeRiskScore } from '../../risk/score.js';
-import { riskProfileNameSchema } from '../../schemas/risk.js';
 
 export const analyzeAdvisoryInputSchema = z.object({
   id: z.string().min(1).max(128),

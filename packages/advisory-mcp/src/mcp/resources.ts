@@ -1,15 +1,15 @@
+import { getProfileWeights, PROFILE_WEIGHTS } from '../risk/profiles.js';
+import { computeRiskScore } from '../risk/score.js';
 import { advisorySchema } from '../schemas/advisory.js';
 import { evidenceSchema } from '../schemas/evidence.js';
-import { PROFILE_WEIGHTS } from '../risk/profiles.js';
-import type { RiskProfileName } from '../schemas/risk.js';
 import { findAdvisoryById } from '../store/repositories/advisory-repository.js';
+import { listEvidenceForAdvisory } from '../store/repositories/evidence-repository.js';
 import {
   buildSourceStatusSummary,
   sourceStatusPayload,
 } from '../store/repositories/source-state-repository.js';
-import { listEvidenceForAdvisory } from '../store/repositories/evidence-repository.js';
-import { computeRiskScore } from '../risk/score.js';
 
+import type { RiskProfileName } from '../schemas/risk.js';
 import type { AdvisoryStore } from '../store/db.js';
 
 export const RESOURCE_URIS = {
@@ -28,7 +28,7 @@ export function readSourceStatusResource(store: AdvisoryStore) {
 }
 
 export function readRiskProfileResource(name: RiskProfileName) {
-  const profile = PROFILE_WEIGHTS[name];
+  const profile = getProfileWeights(name);
   return jsonResource(RESOURCE_URIS.riskProfile(name), { name, weights: profile });
 }
 

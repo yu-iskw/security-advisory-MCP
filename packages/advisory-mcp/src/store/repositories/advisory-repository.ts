@@ -1,5 +1,6 @@
-import type { Advisory } from '../../schemas/advisory.js';
 import { advisorySchema } from '../../schemas/advisory.js';
+
+import type { Advisory } from '../../schemas/advisory.js';
 import type { AdvisoryStore } from '../db.js';
 
 export function upsertAdvisory(store: AdvisoryStore, advisory: Advisory): void {

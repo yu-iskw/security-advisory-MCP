@@ -1,17 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { mergeRecords } from './merger.js';
 import { loadFixtureRecords } from '../sources/fixture-loader.js';
 import { sourcesForPreset } from '../sources/registry.js';
-import type { SyncPreset } from '../schemas/source.js';
 import { upsertAdvisory } from '../store/repositories/advisory-repository.js';
 import { storeRawRecord, upsertEvidence } from '../store/repositories/evidence-repository.js';
-import type { AdvisoryStore } from '../store/db.js';
-import { hashPayload } from './merger.js';
 import { getBundledFixturesPath } from '../util/fixtures-path.js';
 import { logEvent } from '../util/logger.js';
+
+import { hashPayload, mergeRecords } from './merger.js';
+
+import type { NormalizedRecord } from './merger.js';
+import type { SyncPreset } from '../schemas/source.js';
 import type { SyncSourceResult } from '../sources/source.js';
+import type { AdvisoryStore } from '../store/db.js';
 
 export interface SyncEngineOptions {
   store: AdvisoryStore;
@@ -30,7 +32,7 @@ export function runSyncEngine(options: SyncEngineOptions): SyncEngineResult {
   const started = Date.now();
   const sources = sourcesForPreset(options.preset);
   const sourceResults: SyncSourceResult[] = [];
-  const allRecords: import('./merger.js').NormalizedRecord[] = [];
+  const allRecords: NormalizedRecord[] = [];
 
   for (const source of sources) {
     const sourceStarted = Date.now();

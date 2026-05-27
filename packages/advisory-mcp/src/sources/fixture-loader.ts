@@ -1,12 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import type { Advisory } from '../schemas/advisory.js';
-import type { Evidence } from '../schemas/evidence.js';
-import type { TrustTier } from '../schemas/evidence.js';
 import { hashPayload, type NormalizedRecord } from '../ingest/merger.js';
+
 import type { SourceDefinition } from './source.js';
+import type { Advisory } from '../schemas/advisory.js';
+import type { Evidence, TrustTier } from '../schemas/evidence.js';
 import type { SourceId } from '../schemas/source.js';
+
+const UTF8_ENCODING = 'utf8' as const;
+const SOURCE_ID_FIRST_EPSS = 'first-epss' as const satisfies SourceId;
 
 export function loadFixtureRecords(
   fixtureRoot: string,
@@ -23,18 +26,30 @@ export function loadFixtureRecords(
   for (const file of files) {
     const full = path.join(dir, file);
     const raw = fs.readFileSync(full);
-    if (source.id === 'first-epss') {
-      records.push(...parseEpssCsv(raw.toString('utf8'), fetchedAt, full));
+    if (source.id === SOURCE_ID_FIRST_EPSS) {
+      records.push(...parseEpssCsv(raw.toString(UTF8_ENCODING), fetchedAt, full));
       continue;
     }
     if (source.id === 'cisa-kev') {
-      records.push(...parseKevJson(JSON.parse(raw.toString('utf8')) as unknown, fetchedAt, full));
+      records.push(
+        ...parseKevJson(JSON.parse(raw.toString(UTF8_ENCODING)) as unknown, fetchedAt, full),
+      );
       continue;
     }
-    const json = JSON.parse(raw.toString('utf8')) as Record<string, unknown>;
+    const json = JSON.parse(raw.toString(UTF8_ENCODING)) as Record<string, unknown>;
     records.push(...parseFixtureJson(source.id, source.trustTier, json, fetchedAt, full));
   }
   return records;
+}
+
+function readIdField(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  return '';
 }
 
 function parseFixtureJson(
@@ -50,7 +65,7 @@ function parseFixtureJson(
     );
   }
 
-  const advisoryId = String(json.advisoryId ?? json.id ?? json.cve ?? '');
+  const advisoryId = readIdField(json.advisoryId) || readIdField(json.id) || readIdField(json.cve);
   if (!advisoryId) {
     return [];
   }
@@ -60,13 +75,13 @@ function parseFixtureJson(
     description: json.description as string | undefined,
     publishedAt: json.publishedAt as string | undefined,
     modifiedAt: json.modifiedAt as string | undefined,
-    affected: (json.affected as Advisory['affected']) ?? [],
-    cwes: (json.cwes as string[]) ?? [],
-    cvss: (json.cvss as Advisory['cvss']) ?? [],
+    affected: Array.isArray(json.affected) ? (json.affected as Advisory['affected']) : [],
+    cwes: Array.isArray(json.cwes) ? (json.cwes as string[]) : [],
+    cvss: Array.isArray(json.cvss) ? (json.cvss as Advisory['cvss']) : [],
     epss: json.epss as Advisory['epss'],
     kev: json.kev as Advisory['kev'],
     ssvc: json.ssvc as Advisory['ssvc'],
-    references: (json.references as Advisory['references']) ?? [],
+    references: Array.isArray(json.references) ? (json.references as Advisory['references']) : [],
   };
 
   const evidence: Evidence = {
@@ -86,7 +101,7 @@ function parseFixtureJson(
   return [
     {
       advisoryId,
-      aliases: (json.aliases as string[]) ?? [],
+      aliases: Array.isArray(json.aliases) ? (json.aliases as string[]) : [],
       advisory,
       evidence,
     },
@@ -94,25 +109,37 @@ function parseFixtureJson(
 }
 
 function mapEvidenceType(sourceId: SourceId): Evidence['type'] {
-  const map: Partial<Record<SourceId, Evidence['type']>> = {
-    cveproject: 'cve_record',
-    'nvd-feed': 'nvd_enrichment',
-    'cisa-kev': 'kev',
-    'first-epss': 'epss',
-    'cisa-vulnrichment': 'vulnrichment',
-    osv: 'osv',
-    'github-advisory': 'ghsa',
-    'ossf-malicious-packages': 'malicious_package',
-    debian: 'distro',
-    ubuntu: 'distro',
-    alpine: 'distro',
-    rustsec: 'osv',
-    'go-vulndb': 'osv',
-    pypa: 'osv',
-    'mitre-cwe': 'taxonomy',
-    'mitre-capec': 'taxonomy',
-  };
-  return map[sourceId] ?? 'cve_record';
+  switch (sourceId) {
+    case 'cveproject':
+      return 'cve_record';
+    case 'nvd-feed':
+      return 'nvd_enrichment';
+    case 'cisa-kev':
+      return 'kev';
+    case SOURCE_ID_FIRST_EPSS:
+      return 'epss';
+    case 'cisa-vulnrichment':
+      return 'vulnrichment';
+    case 'osv':
+      return 'osv';
+    case 'github-advisory':
+      return 'ghsa';
+    case 'ossf-malicious-packages':
+      return 'malicious_package';
+    case 'debian':
+    case 'ubuntu':
+    case 'alpine':
+      return 'distro';
+    case 'rustsec':
+    case 'go-vulndb':
+    case 'pypa':
+      return 'osv';
+    case 'mitre-cwe':
+    case 'mitre-capec':
+      return 'taxonomy';
+    default:
+      return 'cve_record';
+  }
 }
 
 function parseEpssCsv(csv: string, fetchedAt: string, filePath: string): NormalizedRecord[] {
@@ -120,7 +147,7 @@ function parseEpssCsv(csv: string, fetchedAt: string, filePath: string): Normali
   const out: NormalizedRecord[] = [];
   for (const line of lines) {
     const [cve, epss, percentile] = line.split(',');
-    if (!cve?.startsWith('CVE-')) {
+    if (!cve.startsWith('CVE-')) {
       continue;
     }
     out.push({
