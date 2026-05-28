@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 
+import { LIMITS } from '../../security/limits.js';
 import { createMcpServer } from '../server.js';
 
 import type { AdvisoryStore } from '../../store/store.js';
@@ -63,7 +64,10 @@ async function handle(
   const server = createMcpServer({ store: opts.store, sbomRoots: opts.sbomRoots });
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
 
+  let cleaned = false;
   const cleanup = (): void => {
+    if (cleaned) return;
+    cleaned = true;
     void transport.close();
     void server.close();
   };
@@ -75,7 +79,8 @@ async function handle(
     await transport.handleRequest(req, res, body);
   } catch (err) {
     if (!res.headersSent) {
-      res.statusCode = 500;
+      const status = err instanceof BodyTooLargeError ? 413 : 500;
+      res.statusCode = status;
       res.setHeader('content-type', 'application/json');
       res.end(
         JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
@@ -85,10 +90,28 @@ async function handle(
   }
 }
 
+class BodyTooLargeError extends Error {
+  constructor(limit: number) {
+    super(`request body exceeded ${limit.toString()} bytes`);
+    this.name = 'BodyTooLargeError';
+  }
+}
+
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
+  let total = 0;
+  // Defensive cap: even a stateless POST shouldn't accept arbitrarily large
+  // bodies. JSON-RPC payloads are small; an SBOM scan via scan_sbom_file
+  // reads from disk, not the request body.
+  const limit = LIMITS.maxSbomJsonBytes;
   for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array));
+    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array);
+    total += buf.length;
+    if (total > limit) {
+      req.destroy();
+      throw new BodyTooLargeError(limit);
+    }
+    chunks.push(buf);
   }
   const text = Buffer.concat(chunks).toString('utf8');
   if (text === '') return undefined;

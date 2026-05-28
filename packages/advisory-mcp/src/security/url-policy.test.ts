@@ -29,6 +29,37 @@ describe('isDisallowedIp', () => {
     expect(isDisallowedIp('ff02::1')).toBe(true);
   });
 
+  it('flags link-local across the full fe80::/10 range, not just fe80:', () => {
+    expect(isDisallowedIp('fe80::1')).toBe(true);
+    expect(isDisallowedIp('fe85::1')).toBe(true);
+    expect(isDisallowedIp('fe9a:0:0:0:0:0:0:1')).toBe(true);
+    expect(isDisallowedIp('feab::ffff')).toBe(true);
+    // fec0:: is reserved (deprecated site-local), not link-local; should
+    // not match the link-local regex.
+    expect(isDisallowedIp('fec0::1')).toBe(false);
+  });
+
+  it('flags IPv4-mapped IPv6 in hex form (SSRF bypass guard)', () => {
+    // ::ffff:7f00:0001 == 127.0.0.1
+    expect(isDisallowedIp('::ffff:7f00:0001')).toBe(true);
+    // ::ffff:a9fe:a9fe == 169.254.169.254 (AWS metadata)
+    expect(isDisallowedIp('::ffff:a9fe:a9fe')).toBe(true);
+    // ::ffff:0a00:0001 == 10.0.0.1
+    expect(isDisallowedIp('::ffff:a00:1')).toBe(true);
+  });
+
+  it('flags 6to4-wrapped private IPv4 addresses', () => {
+    // 2002:7f00:0001:: == 6to4 wrapping 127.0.0.1
+    expect(isDisallowedIp('2002:7f00:1::')).toBe(true);
+    // 2002:a9fe:a9fe:: == 6to4 wrapping 169.254.169.254
+    expect(isDisallowedIp('2002:a9fe:a9fe::')).toBe(true);
+  });
+
+  it('flags fully-expanded loopback / unspecified', () => {
+    expect(isDisallowedIp('0:0:0:0:0:0:0:0')).toBe(true);
+    expect(isDisallowedIp('0:0:0:0:0:0:0:1')).toBe(true);
+  });
+
   it('flags IPv6 ULA and v4-mapped private', () => {
     expect(isDisallowedIp('fc00::1')).toBe(true);
     expect(isDisallowedIp('fd12::abcd')).toBe(true);

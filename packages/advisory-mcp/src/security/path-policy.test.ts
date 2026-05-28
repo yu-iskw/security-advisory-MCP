@@ -42,6 +42,11 @@ describe('PathPolicy', () => {
     }
   });
 
+  it('rejects a non-existent candidate path (fail-closed)', () => {
+    const policy = new PathPolicy([root]);
+    expect(() => policy.assertReadable('/this/path/does/not/exist')).toThrow(PathPolicyError);
+  });
+
   it('rejects parent-traversal even via relative paths', () => {
     const policy = new PathPolicy([root]);
     expect(() => policy.assertReadable(join(root, '..', 'somewhere-else'))).toThrow(PathPolicyError);

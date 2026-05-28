@@ -45,46 +45,29 @@ export function escapeFtsQuery(input: string): string {
 }
 
 export class SearchIndex {
-  constructor(private readonly db: DatabaseHandle) {}
+  private readonly updateFiltersStmt;
+  private readonly deleteFtsStmt;
+  private readonly insertFtsStmt;
+  private readonly searchStmt;
+  private readonly indexTx;
 
-  indexAdvisory(input: IndexAdvisoryInput): void {
-    const updateFilters = this.db.prepare(`
+  constructor(db: DatabaseHandle) {
+    // Prepared statements are reused across calls. better-sqlite3 holds a
+    // compiled plan per Statement object, so re-preparing on every call
+    // would be wasted CPU on the hot search/index path.
+    this.updateFiltersStmt = db.prepare(`
       UPDATE advisories
       SET severity        = @severity,
           has_fix         = @hasFix,
           known_exploited = @knownExploited
       WHERE id = @id
     `);
-    const deleteFts = this.db.prepare('DELETE FROM advisory_fts WHERE id = ?');
-    const insertFts = this.db.prepare(`
+    this.deleteFtsStmt = db.prepare('DELETE FROM advisory_fts WHERE id = ?');
+    this.insertFtsStmt = db.prepare(`
       INSERT INTO advisory_fts (id, title, description, aliases)
       VALUES (@id, @title, @description, @aliases)
     `);
-
-    const tx = this.db.transaction((data: IndexAdvisoryInput) => {
-      updateFilters.run({
-        id: data.id,
-        severity: data.severity ?? null,
-        hasFix: data.hasFix ? 1 : 0,
-        knownExploited: data.knownExploited ? 1 : 0,
-      });
-      deleteFts.run(data.id);
-      insertFts.run({
-        id: data.id,
-        title: data.title ?? '',
-        description: data.description ?? '',
-        aliases: (data.aliases ?? []).join(' '),
-      });
-    });
-
-    tx(input);
-  }
-
-  search(query: SearchQuery): SearchHit[] {
-    const limit = Math.min(Math.max(query.limit ?? 10, 1), 50);
-    const match = escapeFtsQuery(query.query);
-
-    const stmt = this.db.prepare(`
+    this.searchStmt = db.prepare(`
       SELECT a.id AS id, fts.rank AS rank
       FROM advisory_fts AS fts
       JOIN advisories   AS a ON a.id = fts.id
@@ -95,8 +78,32 @@ export class SearchIndex {
       ORDER BY fts.rank
       LIMIT @limit
     `);
+    this.indexTx = db.transaction((data: IndexAdvisoryInput) => {
+      this.updateFiltersStmt.run({
+        id: data.id,
+        severity: data.severity ?? null,
+        hasFix: data.hasFix ? 1 : 0,
+        knownExploited: data.knownExploited ? 1 : 0,
+      });
+      this.deleteFtsStmt.run(data.id);
+      this.insertFtsStmt.run({
+        id: data.id,
+        title: data.title ?? '',
+        description: data.description ?? '',
+        aliases: (data.aliases ?? []).join(' '),
+      });
+    });
+  }
 
-    return stmt.all({
+  indexAdvisory(input: IndexAdvisoryInput): void {
+    this.indexTx(input);
+  }
+
+  search(query: SearchQuery): SearchHit[] {
+    const limit = Math.min(Math.max(query.limit ?? 10, 1), 50);
+    const match = escapeFtsQuery(query.query);
+
+    return this.searchStmt.all({
       match,
       severity: query.severity ?? null,
       hasFix: query.hasFix === undefined ? null : query.hasFix ? 1 : 0,

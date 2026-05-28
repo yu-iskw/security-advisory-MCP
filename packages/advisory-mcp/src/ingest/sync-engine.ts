@@ -41,8 +41,8 @@ function extractAffectedPackages(
 ): ReadonlyArray<PackageRowOut> {
   const out: PackageRowOut[] = [];
   for (const ev of evidenceRows) {
-    if (ev.source !== 'osv' && ev.source !== 'ossf-malicious-packages') continue;
     const pkgs = readAffectedFromEvidence(ev.normalizedJson);
+    if (pkgs.length === 0) continue;
     for (const pkg of pkgs) {
       pushPackageRows(out, advisoryId, pkg, ev.source, ev.confidence);
     }

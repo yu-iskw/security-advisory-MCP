@@ -62,13 +62,15 @@ export function analyzePackage(
   let malicious = false;
   const seenAdvisories = new Set<string>();
   for (const row of rows) {
-    const isMalicious = row.source === 'ossf-malicious-packages';
+    const advisory = store.advisories.findById(row.advisoryId);
+    const isMalicious = advisory?.type === 'malicious_package';
     if (isMalicious) malicious = true;
     const affected = isMalicious || isVersionAffected(resolved.version, row);
     if (!affected) continue;
     if (seenAdvisories.has(row.advisoryId)) continue;
     seenAdvisories.add(row.advisoryId);
     const risk = explainRisk(store, { id: row.advisoryId, profile: input.profile });
+    const evidence = store.evidence.findByAdvisoryId(row.advisoryId);
     matches.push({
       advisoryId: row.advisoryId,
       source: row.source,
@@ -76,9 +78,9 @@ export function analyzePackage(
       affected,
       riskScore: risk.risk?.score,
       severity: risk.risk?.severity,
-      knownExploited: store.evidence
-        .findByAdvisoryId(row.advisoryId)
-        .some((e) => e.source === 'cisa-kev' && e.type === 'known_exploited'),
+      knownExploited: evidence.some(
+        (e) => e.source === 'cisa-kev' && e.type === 'known_exploited',
+      ),
     });
   }
 
@@ -100,17 +102,12 @@ function resolveQuery(input: AnalyzePackageInput): {
   if (input.purl) {
     const p = parsePurl(input.purl);
     const eco = canonicalEcosystem(p.type) ?? p.type;
-    // OSV uses ecosystem-specific delimiters:
-    //   - Maven: groupId:artifactId
-    //   - go / composer: namespace/name
-    //   - npm scoped: @scope/name
-    let name: string;
+    // OSV name shape varies by ecosystem:
+    //   - Maven uses `groupId:artifactId`
+    //   - npm scoped, go, composer, ... use `namespace/name`
+    let name = p.name;
     if (p.namespace !== undefined) {
-      if (eco === 'maven') name = `${p.namespace}:${p.name}`;
-      else if (eco === 'npm' && p.namespace.startsWith('@')) name = `${p.namespace}/${p.name}`;
-      else name = `${p.namespace}/${p.name}`;
-    } else {
-      name = p.name;
+      name = eco === 'maven' ? `${p.namespace}:${p.name}` : `${p.namespace}/${p.name}`;
     }
     return { ecosystem: eco, name, version: p.version ?? input.version };
   }

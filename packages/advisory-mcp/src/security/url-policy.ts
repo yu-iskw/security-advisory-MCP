@@ -138,11 +138,41 @@ function isDisallowedIpv4(address: string): boolean {
 function isDisallowedIpv6(address: string): boolean {
   const lower = address.toLowerCase();
   if (lower === '::' || lower === '::1') return true;
-  if (lower.startsWith('fe80:')) return true; // link-local
-  if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // ULA
-  if (lower.startsWith('ff')) return true; // multicast
-  // IPv4-mapped: ::ffff:a.b.c.d
-  const v4Mapped = lower.match(/^::ffff:([\d.]+)$/);
-  if (v4Mapped?.[1]) return isDisallowedIpv4(v4Mapped[1]);
+  // Fully-expanded loopback / unspecified.
+  if (/^0:0:0:0:0:0:0:[01]$/.test(lower)) return true;
+  // Link-local: fe80::/10 — first 10 bits are 1111111010, i.e. addresses
+  // starting with hex fe80-febf. The narrow startsWith('fe80:') check
+  // missed fe81-febf, which are equally routable on the local link.
+  if (/^fe[89ab][0-9a-f]:/.test(lower)) return true;
+  // ULA: fc00::/7
+  if (/^f[cd][0-9a-f]{2}:/.test(lower)) return true;
+  // Multicast: ff00::/8
+  if (lower.startsWith('ff')) return true;
+  // IPv4-mapped, dotted form: ::ffff:a.b.c.d
+  const v4Dotted = /^::ffff:([\d.]+)$/.exec(lower);
+  if (v4Dotted?.[1]) return isDisallowedIpv4(v4Dotted[1]);
+  // IPv4-mapped, hex form: ::ffff:abcd:1234 — reconstruct the dotted IPv4
+  // and re-check. Without this, ::ffff:7f00:0001 (= 127.0.0.1) would
+  // bypass the loopback / private-range checks.
+  const v4Hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(lower);
+  if (v4Hex) {
+    const high = Number.parseInt(v4Hex[1] ?? '0', 16);
+    const low = Number.parseInt(v4Hex[2] ?? '0', 16);
+    const dotted =
+      `${((high >> 8) & 0xff).toString()}.${(high & 0xff).toString()}.` +
+      `${((low >> 8) & 0xff).toString()}.${(low & 0xff).toString()}`;
+    return isDisallowedIpv4(dotted);
+  }
+  // 6to4: 2002::/16 maps IPv4 into IPv6. Block 6to4 wrappers that point at
+  // private v4 space.
+  const sixToFour = /^2002:([0-9a-f]{1,4}):([0-9a-f]{1,4}):/.exec(lower);
+  if (sixToFour) {
+    const high = Number.parseInt(sixToFour[1] ?? '0', 16);
+    const low = Number.parseInt(sixToFour[2] ?? '0', 16);
+    const dotted =
+      `${((high >> 8) & 0xff).toString()}.${(high & 0xff).toString()}.` +
+      `${((low >> 8) & 0xff).toString()}.${(low & 0xff).toString()}`;
+    return isDisallowedIpv4(dotted);
+  }
   return false;
 }
