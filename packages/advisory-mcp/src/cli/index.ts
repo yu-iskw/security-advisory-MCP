@@ -23,7 +23,9 @@ program
 program
   .command('serve')
   .description('Start the MCP server')
-  .option('--transport <transport>', 'Transport to use (stdio)', 'stdio')
+  .option('--transport <transport>', 'Transport to use (stdio|http)', 'stdio')
+  .option('--port <n>', 'Port for the http transport', (v) => Number.parseInt(v, 10), 8765)
+  .option('--host <host>', 'Host for the http transport', '127.0.0.1')
   .option(CONFIG_OPT, CONFIG_DESC)
   .action(async (options: ServeOptions) => {
     await runServe(options);
