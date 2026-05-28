@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { RISK_PROFILE_NAMES } from '../risk/profiles.js';
 
+import { registerPrompts } from './prompts.js';
 import { registerAdvisoryResources } from './resources.js';
 import { analyzeAdvisory, AnalyzeAdvisoryInputSchema } from './tools/analyze-advisory.js';
 import { analyzePackage, AnalyzePackageInputSchema } from './tools/analyze-package.js';
@@ -253,6 +254,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}): McpServer
     );
 
     registerAdvisoryResources(server, store);
+    registerPrompts(server);
   }
 
   return server;
