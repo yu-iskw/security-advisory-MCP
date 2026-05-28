@@ -1,6 +1,7 @@
 import { loadConfig } from '../../config/config.js';
 import { HttpsDownloader } from '../../ingest/downloader.js';
 import { SyncEngine } from '../../ingest/sync-engine.js';
+import { FileAuditor, NoopAuditor } from '../../security/audit.js';
 import { UrlPolicy } from '../../security/url-policy.js';
 import { CISA_KEV_HOST, CisaKevSource } from '../../sources/cisa-kev.js';
 import { CISA_VULNRICHMENT_HOST, CisaVulnrichmentSource } from '../../sources/cisa-vulnrichment.js';
@@ -88,9 +89,12 @@ export async function runSync(options: SyncOptions): Promise<void> {
     return;
   }
 
+  const auditor = config.auditLogPath
+    ? new FileAuditor({ path: config.auditLogPath })
+    : new NoopAuditor();
   const db = openStore({ path: config.databasePath });
   try {
-    const engine = new SyncEngine({ db, downloader, cacheDir: config.cachePath });
+    const engine = new SyncEngine({ db, downloader, cacheDir: config.cachePath, auditor });
     for (const adapter of adapters) {
       logger.info('sync_source_started', { source: adapter.id });
       const result = await engine.syncOne(adapter);

@@ -1,3 +1,4 @@
+import { NoopAuditor, type Auditor } from '../security/audit.js';
 import { AdvisoryRepository } from '../store/repositories/advisory-repository.js';
 import { AffectedPackagesRepository } from '../store/repositories/affected-packages-repository.js';
 import { EvidenceRepository } from '../store/repositories/evidence-repository.js';
@@ -116,6 +117,7 @@ interface SyncEngineDeps {
   downloader: Downloader;
   cacheDir: string;
   signal?: AbortSignal;
+  auditor?: Auditor;
 }
 
 interface SyncSourceResult {
@@ -132,6 +134,7 @@ export class SyncEngine {
   private readonly evidenceRepo: EvidenceRepository;
   private readonly stateRepo: SourceStateRepository;
   private readonly search: SearchIndex;
+  private readonly auditor: Auditor;
 
   constructor(private readonly deps: SyncEngineDeps) {
     this.advisoryRepo = new AdvisoryRepository(deps.db);
@@ -139,12 +142,14 @@ export class SyncEngine {
     this.evidenceRepo = new EvidenceRepository(deps.db);
     this.stateRepo = new SourceStateRepository(deps.db);
     this.search = new SearchIndex(deps.db);
+    this.auditor = deps.auditor ?? new NoopAuditor();
   }
 
   async syncOne(adapter: SourceAdapter): Promise<SyncSourceResult> {
     const startedAt = nowIso();
     const startNs = process.hrtime.bigint();
     const previous = this.stateRepo.findBySource(adapter.id);
+    this.auditor.emit('sync_started', { source: adapter.id });
 
     this.stateRepo.upsert({
       source: adapter.id,
@@ -307,6 +312,13 @@ export class SyncEngine {
       version: validators?.version,
     });
 
+    this.auditor.emit('sync_completed', {
+      source: adapter.id,
+      status,
+      records,
+      durationMs,
+      error,
+    });
     return { source: adapter.id, status, records, error, durationMs };
   }
 }

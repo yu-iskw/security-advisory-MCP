@@ -52,6 +52,11 @@ export const ConfigSchema = z.object({
    * users opt in to file-access by adding paths here.
    */
   sbomRoots: z.array(z.string().min(1)).default([]),
+  /**
+   * Optional audit-log path. When set, sync + tool events append to this
+   * JSONL file (RFC 22.3). Disabled by default.
+   */
+  auditLogPath: z.string().min(1).optional(),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
