@@ -47,6 +47,11 @@ export const ConfigSchema = z.object({
   maxDecompressedBytes: z.number().int().positive().default(5_000_000_000),
   logLevel: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   sources: z.record(z.enum(SOURCE_IDS), SourceConfigSchema).default({}),
+  /**
+   * Approved directories from which scan_sbom_file may read. Empty by default;
+   * users opt in to file-access by adding paths here.
+   */
+  sbomRoots: z.array(z.string().min(1)).default([]),
 });
 
 type Config = z.infer<typeof ConfigSchema>;

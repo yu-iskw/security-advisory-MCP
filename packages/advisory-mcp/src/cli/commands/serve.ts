@@ -40,7 +40,7 @@ export async function runServe(options: ServeOptions): Promise<void> {
 
   logger.info('server_starting', { transport: options.transport, hasStore: store !== undefined });
 
-  const server = createMcpServer({ store });
+  const server = createMcpServer({ store, sbomRoots: config.sbomRoots });
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import { RISK_PROFILE_NAMES } from '../risk/profiles.js';
+import { PathPolicy } from '../security/path-policy.js';
 
 import { registerPrompts } from './prompts.js';
 import { registerAdvisoryResources } from './resources.js';
@@ -10,6 +11,7 @@ import { analyzePackage, AnalyzePackageInputSchema } from './tools/analyze-packa
 import { explainRisk, ExplainRiskInputSchema } from './tools/explain-risk.js';
 import { ping } from './tools/ping.js';
 import { prioritize, PrioritizeInputSchema } from './tools/prioritize.js';
+import { scanSbomFile, ScanSbomFileInputSchema } from './tools/scan-sbom-file.js';
 import { scanSbom, ScanSbomInputSchema } from './tools/scan-sbom.js';
 import { searchAdvisories, SearchAdvisoriesInputSchema } from './tools/search-advisories.js';
 import { sourceStatus, SourceStatusInputSchema } from './tools/source-status.js';
@@ -21,6 +23,8 @@ export const SERVER_VERSION = '0.1.0';
 
 interface CreateMcpServerOptions {
   store?: AdvisoryStore;
+  /** Approved directories for scan_sbom_file. Empty disables the tool. */
+  sbomRoots?: ReadonlyArray<string>;
 }
 
 export function createMcpServer(options: CreateMcpServerOptions = {}): McpServer {
@@ -252,6 +256,41 @@ export function createMcpServer(options: CreateMcpServerOptions = {}): McpServer
         };
       },
     );
+
+    if (options.sbomRoots && options.sbomRoots.length > 0) {
+      const pathPolicy = new PathPolicy(options.sbomRoots);
+      server.registerTool(
+        'scan_sbom_file',
+        {
+          title: 'Scan SBOM file',
+          description:
+            'Read an SBOM (CycloneDX or SPDX JSON) from an operator-approved ' +
+            'path on disk and scan it against the local advisory store. The path ' +
+            'must be inside one of the configured `sbomRoots`. Does not access ' +
+            'the network.',
+          inputSchema: {
+            path: z.string().min(1).max(4096),
+            format: z.enum(['auto', 'cyclonedx', 'spdx']).default('auto').optional(),
+            profile: z
+              .enum(['default', 'internet_exposed', 'application_dependency', 'container_image'])
+              .default('application_dependency')
+              .optional(),
+            includeDevDependencies: z.boolean().default(false).optional(),
+            limit: z.number().int().min(1).max(500).default(100).optional(),
+          },
+        },
+        async (input) => {
+          const parsed = ScanSbomFileInputSchema.parse(input);
+          const result = await scanSbomFile(store, pathPolicy, parsed);
+          return {
+            content: [
+              { type: 'text' as const, text: result.markdown },
+              { type: 'text' as const, text: JSON.stringify(result, null, 2) },
+            ],
+          };
+        },
+      );
+    }
 
     registerAdvisoryResources(server, store);
     registerPrompts(server);
