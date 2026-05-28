@@ -12,8 +12,10 @@ describe('security: URL policy survives integration with HttpsDownloader', () =>
       resolver: () => Promise.resolve(['1.1.1.1']),
     });
     const dl = new HttpsDownloader(policy);
-    await expect(dl.download({ url: 'https://evil.example.test/' }))
-      .rejects.toMatchObject({ name: 'DownloadError', reason: 'policy' });
+    await expect(dl.download({ url: 'https://evil.example.test/' })).rejects.toMatchObject({
+      name: 'DownloadError',
+      reason: 'policy',
+    });
   });
 
   it('blocks an allowlisted host that resolves to AWS metadata endpoint (DNS rebinding)', async () => {
@@ -38,8 +40,10 @@ describe('security: URL policy survives integration with HttpsDownloader', () =>
       resolver: () => Promise.resolve(['1.1.1.1']),
     });
     const dl = new HttpsDownloader(policy);
-    await expect(dl.download({ url: 'http://evil.example.test/' }))
-      .rejects.toMatchObject({ name: 'DownloadError', reason: 'policy' });
+    await expect(dl.download({ url: 'http://evil.example.test/' })).rejects.toMatchObject({
+      name: 'DownloadError',
+      reason: 'policy',
+    });
   });
 
   it('blocks loopback resolutions (127.0.0.1)', async () => {
@@ -48,7 +52,9 @@ describe('security: URL policy survives integration with HttpsDownloader', () =>
       resolver: () => Promise.resolve(['127.0.0.1']),
     });
     const dl = new HttpsDownloader(policy);
-    await expect(dl.download({ url: 'https://evil.example.test/' }))
-      .rejects.toMatchObject({ name: 'DownloadError', reason: 'policy' });
+    await expect(dl.download({ url: 'https://evil.example.test/' })).rejects.toMatchObject({
+      name: 'DownloadError',
+      reason: 'policy',
+    });
   });
 });

@@ -116,8 +116,7 @@ export function registerPrompts(server: McpServer): void {
           [
             `Draft a risk-acceptance memo for **${id}**.`,
             '',
-            'Look up the advisory via `analyze_advisory` and `explain_risk` before ' +
-              'writing.',
+            'Look up the advisory via `analyze_advisory` and `explain_risk` before ' + 'writing.',
             '',
             'The memo must include:',
             '- the asserted finding (with source provenance),',
@@ -153,15 +152,13 @@ export function registerPrompts(server: McpServer): void {
             `Review the SBOM scan for ${projectName ?? 'this project'}.`,
             '',
             'Steps:',
-            '1. Call `scan_sbom` (or ask the user to paste the SBOM JSON if ' +
-              'unavailable).',
+            '1. Call `scan_sbom` (or ask the user to paste the SBOM JSON if ' + 'unavailable).',
             '2. For the top 5 hits by risk score, also call `explain_risk` to ' +
               'understand the drivers.',
             '3. Produce a remediation list ordered by risk, grouped by the ' +
               'package that needs upgrading.',
             '',
-            'Deployment context to consider: ' +
-              (deploymentContext ?? 'unknown; ask the user'),
+            'Deployment context to consider: ' + (deploymentContext ?? 'unknown; ask the user'),
             '',
             'Surface any malicious-package matches at the top of the list, ' +
               'separately from CVE matches.',

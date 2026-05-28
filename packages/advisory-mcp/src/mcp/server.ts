@@ -120,7 +120,13 @@ export function createMcpServer(options: CreateMcpServerOptions = {}): McpServer
           'access the network.',
         inputSchema: {
           source: z.string().min(1).max(64).optional(),
-          staleAfterHours: z.number().int().min(1).max(24 * 30).default(168).optional(),
+          staleAfterHours: z
+            .number()
+            .int()
+            .min(1)
+            .max(24 * 30)
+            .default(168)
+            .optional(),
         },
       },
       (input) => {
@@ -173,10 +179,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}): McpServer
           ecosystem: z.string().optional(),
           name: z.string().optional(),
           version: z.string().optional(),
-          profile: z
-            .enum(RISK_PROFILE_NAMES)
-            .default('application_dependency')
-            .optional(),
+          profile: z.enum(RISK_PROFILE_NAMES).default('application_dependency').optional(),
         },
       },
       (input) => {

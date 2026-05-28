@@ -17,10 +17,7 @@ describe('advisory-mcp server (in-memory transport)', () => {
     server = createMcpServer();
     client = new Client({ name: 'test-client', version: '0.0.0' });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-    await Promise.all([
-      server.connect(serverTransport),
-      client.connect(clientTransport),
-    ]);
+    await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
   });
 
   afterEach(async () => {

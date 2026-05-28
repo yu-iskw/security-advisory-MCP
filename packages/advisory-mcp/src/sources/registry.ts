@@ -8,12 +8,7 @@ const PRESET_GROUPS: Record<SyncPreset, ReadonlyArray<SyncPreset>> = {
   research: ['research'],
 };
 
-const ALL_PRESET: ReadonlyArray<SyncPreset> = [
-  'core',
-  'packages',
-  'ecosystems',
-  'context',
-];
+const ALL_PRESET: ReadonlyArray<SyncPreset> = ['core', 'packages', 'ecosystems', 'context'];
 
 export class SourceRegistry {
   private readonly adapters = new Map<string, SourceAdapter>();

@@ -32,7 +32,12 @@ describe('mcp integration: prompts', () => {
   it('lists all four prompts', async () => {
     const res = await client.listPrompts();
     const names = res.prompts.map((p) => p.name).sort();
-    expect(names).toEqual(['patch-brief', 'risk-acceptance-draft', 'sbom-risk-review', 'triage-advisory']);
+    expect(names).toEqual([
+      'patch-brief',
+      'risk-acceptance-draft',
+      'sbom-risk-review',
+      'triage-advisory',
+    ]);
   });
 
   it('triage-advisory returns instructions referencing the advisory id', async () => {

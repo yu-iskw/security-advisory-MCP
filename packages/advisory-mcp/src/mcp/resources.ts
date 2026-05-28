@@ -120,12 +120,30 @@ export function registerAdvisoryResources(server: McpServer, store: AdvisoryStor
     },
   );
 
-  registerAliasResource(server, store, 'advisory-by-cve', 'advisory://cve/{cveId}', 'cveId',
-    'Same as advisory://id/{id} but scoped to CVE identifiers.');
-  registerAliasResource(server, store, 'advisory-by-ghsa', 'advisory://ghsa/{ghsaId}', 'ghsaId',
-    'Same as advisory://id/{id} but scoped to GHSA identifiers.');
-  registerAliasResource(server, store, 'advisory-by-osv', 'advisory://osv/{osvId}', 'osvId',
-    'Same as advisory://id/{id} but scoped to OSV / ecosystem identifiers (PYSEC, RUSTSEC, GO).');
+  registerAliasResource(
+    server,
+    store,
+    'advisory-by-cve',
+    'advisory://cve/{cveId}',
+    'cveId',
+    'Same as advisory://id/{id} but scoped to CVE identifiers.',
+  );
+  registerAliasResource(
+    server,
+    store,
+    'advisory-by-ghsa',
+    'advisory://ghsa/{ghsaId}',
+    'ghsaId',
+    'Same as advisory://id/{id} but scoped to GHSA identifiers.',
+  );
+  registerAliasResource(
+    server,
+    store,
+    'advisory-by-osv',
+    'advisory://osv/{osvId}',
+    'osvId',
+    'Same as advisory://id/{id} but scoped to OSV / ecosystem identifiers (PYSEC, RUSTSEC, GO).',
+  );
 
   server.registerResource(
     'package-summary',

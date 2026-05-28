@@ -78,8 +78,7 @@ export function scoreRisk(profile: RiskProfileName, inputs: ScoreInputs): RiskRe
   // evidence confidence
   if (inputs.evidenceConfidences.length > 0) {
     const avg =
-      inputs.evidenceConfidences.reduce((a, b) => a + b, 0) /
-      inputs.evidenceConfidences.length;
+      inputs.evidenceConfidences.reduce((a, b) => a + b, 0) / inputs.evidenceConfidences.length;
     const contribution = weights.evidenceConfidence * avg;
     drivers.push({
       kind: 'evidence_confidence',

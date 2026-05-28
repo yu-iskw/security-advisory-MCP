@@ -28,11 +28,7 @@ export function compareVersion(ecosystem: Ecosystem, a: string, b: string): numb
   return looseSemverCompare(a, b);
 }
 
-export function inRange(
-  ecosystem: Ecosystem,
-  version: string,
-  range: OsvAffectedRange,
-): boolean {
+export function inRange(ecosystem: Ecosystem, version: string, range: OsvAffectedRange): boolean {
   let affected = false;
   for (const ev of range.events) {
     if (ev.introduced) {
@@ -83,8 +79,8 @@ function compareCore(a: string, b: string): number {
   for (let i = 0; i < len; i++) {
     // i is a bounded counter against ap.length/bp.length; safe.
     /* eslint-disable security/detect-object-injection */
-    const ai = i < ap.length ? ap[i] ?? '' : '0';
-    const bi = i < bp.length ? bp[i] ?? '' : '0';
+    const ai = i < ap.length ? (ap[i] ?? '') : '0';
+    const bi = i < bp.length ? (bp[i] ?? '') : '0';
     /* eslint-enable security/detect-object-injection */
     const cmp = comparePart(ai, bi);
     if (cmp !== 0) return cmp;

@@ -25,12 +25,9 @@ export const AnalyzePackageInputSchema = z
       ])
       .default('application_dependency'),
   })
-  .refine(
-    (v) => v.purl !== undefined || (v.ecosystem !== undefined && v.name !== undefined),
-    {
-      message: 'Provide either `purl` or both `ecosystem` and `name`.',
-    },
-  );
+  .refine((v) => v.purl !== undefined || (v.ecosystem !== undefined && v.name !== undefined), {
+    message: 'Provide either `purl` or both `ecosystem` and `name`.',
+  });
 
 type AnalyzePackageInput = z.infer<typeof AnalyzePackageInputSchema>;
 
@@ -78,9 +75,7 @@ export function analyzePackage(
       affected,
       riskScore: risk.risk?.score,
       severity: risk.risk?.severity,
-      knownExploited: evidence.some(
-        (e) => e.source === 'cisa-kev' && e.type === 'known_exploited',
-      ),
+      knownExploited: evidence.some((e) => e.source === 'cisa-kev' && e.type === 'known_exploited'),
     });
   }
 
@@ -111,7 +106,7 @@ function resolveQuery(input: AnalyzePackageInput): {
     }
     return { ecosystem: eco, name, version: p.version ?? input.version };
   }
-  const eco = canonicalEcosystem(input.ecosystem ?? '') ?? (input.ecosystem ?? '');
+  const eco = canonicalEcosystem(input.ecosystem ?? '') ?? input.ecosystem ?? '';
   return { ecosystem: eco, name: input.name ?? '', version: input.version };
 }
 
@@ -146,7 +141,8 @@ function renderMarkdown(
     lines.push('', `**Matches:** ${matches.length}`);
     for (const m of matches) {
       const flag = m.knownExploited ? ' :rotating_light: KEV' : '';
-      const score = m.riskScore !== undefined ? ` — risk ${m.riskScore}/100 (${m.severity ?? 'n/a'})` : '';
+      const score =
+        m.riskScore !== undefined ? ` — risk ${m.riskScore}/100 (${m.severity ?? 'n/a'})` : '';
       lines.push(`- **${m.advisoryId}** (${m.evidenceType})${score}${flag}`);
     }
   }

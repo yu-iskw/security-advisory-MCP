@@ -66,7 +66,9 @@ export function parseSbom(json: string, hint: SbomFormat | 'auto' = 'auto'): Nor
   try {
     data = JSON.parse(json);
   } catch (err) {
-    throw new SbomFormatError(`SBOM is not valid JSON: ${err instanceof Error ? err.message : String(err)}`);
+    throw new SbomFormatError(
+      `SBOM is not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
   if (typeof data !== 'object' || data === null) {
     throw new SbomFormatError('SBOM root is not an object');

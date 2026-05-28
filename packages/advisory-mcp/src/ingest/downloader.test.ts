@@ -22,9 +22,7 @@ describe('HttpsDownloader', () => {
       resolver: () => Promise.resolve(['1.1.1.1']),
     });
     const dl = new HttpsDownloader(policy);
-    await expect(dl.download({ url: 'http://example.com/' })).rejects.toBeInstanceOf(
-      DownloadError,
-    );
+    await expect(dl.download({ url: 'http://example.com/' })).rejects.toBeInstanceOf(DownloadError);
   });
 
   it('rejects hosts that resolve to private/loopback addresses', async () => {

@@ -110,9 +110,9 @@ export class AdvisoryRepository {
   }
 
   findById(id: string): AdvisoryRow | undefined {
-    const row = this.db
-      .prepare('SELECT * FROM advisories WHERE id = ?')
-      .get(id) as DbAdvisoryRow | undefined;
+    const row = this.db.prepare('SELECT * FROM advisories WHERE id = ?').get(id) as
+      | DbAdvisoryRow
+      | undefined;
     return row ? rowFromDb(row) : undefined;
   }
 

@@ -34,9 +34,7 @@ const CVE_RECORD = {
           versions: [{ version: '5.6.0', status: 'affected' }],
         },
       ],
-      metrics: [
-        { cvssV3_1: { vectorString: 'CVSS:3.1/AV:N/...', baseScore: 10.0 } },
-      ],
+      metrics: [{ cvssV3_1: { vectorString: 'CVSS:3.1/AV:N/...', baseScore: 10.0 } }],
       problemTypes: [
         { descriptions: [{ cweId: 'CWE-506', description: 'Embedded Malicious Code' }] },
       ],

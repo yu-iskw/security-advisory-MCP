@@ -82,9 +82,7 @@ async function handle(
       const status = err instanceof BodyTooLargeError ? 413 : 500;
       res.statusCode = status;
       res.setHeader('content-type', 'application/json');
-      res.end(
-        JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
-      );
+      res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }));
     }
     cleanup();
   }

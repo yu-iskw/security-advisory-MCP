@@ -9,7 +9,10 @@ import { CVEPROJECT_HOST, CveProjectSource } from '../../sources/cveproject.js';
 import { FIRST_EPSS_HOST, FirstEpssSource } from '../../sources/first-epss.js';
 import { NUCLEI_HOST, NucleiTemplatesSource } from '../../sources/nuclei-templates.js';
 import { NVD_HOST, NvdFeedsSource } from '../../sources/nvd-feeds.js';
-import { OSSF_MALICIOUS_HOST, OssfMaliciousPackagesSource } from '../../sources/ossf-malicious-packages.js';
+import {
+  OSSF_MALICIOUS_HOST,
+  OssfMaliciousPackagesSource,
+} from '../../sources/ossf-malicious-packages.js';
 import {
   createGoVulnDbSource,
   createPypaSource,

@@ -23,9 +23,7 @@ const OSV_RECORD = {
   affected: [
     {
       package: { ecosystem: 'Maven', name: 'org.apache.logging.log4j:log4j-core' },
-      ranges: [
-        { type: 'ECOSYSTEM', events: [{ introduced: '2.0' }, { fixed: '2.17.0' }] },
-      ],
+      ranges: [{ type: 'ECOSYSTEM', events: [{ introduced: '2.0' }, { fixed: '2.17.0' }] }],
     },
   ],
 };

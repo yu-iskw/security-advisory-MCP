@@ -22,8 +22,7 @@ import type {
  * Surfaced as `malicious_package` evidence with its own advisoryDraft so the
  * analyze_package tool can flag any matching package immediately.
  */
-const OSSF_MALICIOUS_URL =
-  'https://codeload.github.com/ossf/malicious-packages/tar.gz/main';
+const OSSF_MALICIOUS_URL = 'https://codeload.github.com/ossf/malicious-packages/tar.gz/main';
 export const OSSF_MALICIOUS_HOST = 'codeload.github.com';
 
 const MAL_FILENAME_RE = /(MAL-[\w-]+|GHSA-[\w-]+)\.json$/i;

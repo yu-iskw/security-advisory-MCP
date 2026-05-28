@@ -77,7 +77,9 @@ describe('OssfMaliciousPackagesSource', () => {
     expect(evidence).toHaveLength(1);
     expect(evidence[0]?.evidenceType).toBe('malicious_package');
     expect(evidence[0]?.advisoryDraft?.type).toBe('malicious_package');
-    const normalized = evidence[0]?.normalized as { affected: { ecosystem: string; name: string }[] };
+    const normalized = evidence[0]?.normalized as {
+      affected: { ecosystem: string; name: string }[];
+    };
     expect(normalized.affected[0]).toMatchObject({ ecosystem: 'npm', name: 'foo-typosquat' });
   });
 });

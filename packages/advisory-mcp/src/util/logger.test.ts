@@ -42,7 +42,9 @@ describe('logger', () => {
     logger.error('error_event');
 
     expect(stream.lines).toHaveLength(2);
-    expect(stream.lines.every((l) => l.includes('"warn_event"') || l.includes('"error_event"'))).toBe(true);
+    expect(
+      stream.lines.every((l) => l.includes('"warn_event"') || l.includes('"error_event"')),
+    ).toBe(true);
   });
 
   it('child loggers inherit and extend base fields', () => {

@@ -16,8 +16,7 @@ import type {
  * CISA Vulnrichment (RFC 6.3 / Tier A). The repository archive ships every
  * branch tarball at codeload.github.com.
  */
-const CISA_VULNRICHMENT_URL =
-  'https://codeload.github.com/cisagov/vulnrichment/tar.gz/develop';
+const CISA_VULNRICHMENT_URL = 'https://codeload.github.com/cisagov/vulnrichment/tar.gz/develop';
 export const CISA_VULNRICHMENT_HOST = 'codeload.github.com';
 
 const CVE_FILENAME_RE = /(CVE-\d{4}-\d{4,7})\.json$/i;
@@ -105,8 +104,7 @@ export class CisaVulnrichmentSource implements SourceAdapter {
     if (!cve.startsWith('CVE-')) return Promise.resolve([]);
     const data = record.raw as VulnrichmentCveRecord;
     const adp = data.containers?.adp ?? [];
-    const cisaEntry =
-      adp.find((a) => a.providerMetadata?.shortName === 'CISA-ADP') ?? adp[0];
+    const cisaEntry = adp.find((a) => a.providerMetadata?.shortName === 'CISA-ADP') ?? adp[0];
     if (!cisaEntry) return Promise.resolve([]);
 
     const cwes = (cisaEntry.problemTypes ?? [])

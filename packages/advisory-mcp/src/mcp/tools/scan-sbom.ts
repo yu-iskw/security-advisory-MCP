@@ -11,12 +11,7 @@ export const ScanSbomInputSchema = z.object({
   sbomJson: z.string().max(LIMITS.maxSbomJsonBytes),
   format: z.enum(['auto', 'cyclonedx', 'spdx']).default('auto'),
   profile: z
-    .enum([
-      'default',
-      'internet_exposed',
-      'application_dependency',
-      'container_image',
-    ])
+    .enum(['default', 'internet_exposed', 'application_dependency', 'container_image'])
     .default('application_dependency'),
   includeDevDependencies: z.boolean().default(false),
   limit: z.number().int().min(1).max(500).default(100),
@@ -101,10 +96,14 @@ function renderMarkdown(format: string, scanned: number, hits: ScanHit[]): strin
   }
   for (const h of hits) {
     const pkg = `${h.component.name ?? h.component.purl ?? '?'}${h.component.version ? `@${h.component.version}` : ''}`;
-    const flag = h.malicious ? ' :rotating_light: MALICIOUS' : h.knownExploited === true ? ' :rotating_light: KEV' : '';
-    const score = h.riskScore !== undefined ? ` — risk ${h.riskScore}/100 (${h.severity ?? 'n/a'})` : '';
+    const flag = h.malicious
+      ? ' :rotating_light: MALICIOUS'
+      : h.knownExploited === true
+        ? ' :rotating_light: KEV'
+        : '';
+    const score =
+      h.riskScore !== undefined ? ` — risk ${h.riskScore}/100 (${h.severity ?? 'n/a'})` : '';
     lines.push(`- **${pkg}** → ${h.advisoryId}${score}${flag}`);
   }
   return lines.join('\n');
 }
-

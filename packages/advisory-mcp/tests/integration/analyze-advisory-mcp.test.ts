@@ -50,10 +50,7 @@ describe('mcp integration: analyze_advisory + advisory resource', () => {
     server = createMcpServer({ store });
     client = new Client({ name: 'test-client', version: '0.0.0' });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-    await Promise.all([
-      server.connect(serverTransport),
-      client.connect(clientTransport),
-    ]);
+    await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
   });
 
   afterEach(async () => {

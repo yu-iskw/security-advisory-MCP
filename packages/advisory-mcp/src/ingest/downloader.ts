@@ -10,13 +10,7 @@ import type { UrlPolicy } from '../security/url-policy.js';
 export class DownloadError extends Error {
   constructor(
     message: string,
-    public readonly reason:
-      | 'policy'
-      | 'http'
-      | 'oversized'
-      | 'timeout'
-      | 'redirect'
-      | 'aborted',
+    public readonly reason: 'policy' | 'http' | 'oversized' | 'timeout' | 'redirect' | 'aborted',
   ) {
     super(message);
     this.name = 'DownloadError';
@@ -90,10 +84,7 @@ export class HttpsDownloader implements Downloader {
       }
 
       if (result.status < 200 || result.status >= 300) {
-        throw new DownloadError(
-          `HTTP ${result.status} for ${verified.href}`,
-          'http',
-        );
+        throw new DownloadError(`HTTP ${result.status} for ${verified.href}`, 'http');
       }
 
       return {
@@ -183,7 +174,10 @@ export class HttpsDownloader implements Downloader {
       return { status, contentType, etag, lastModified, location, body };
     } catch (err) {
       if (controller.signal.aborted && !opts.signal?.aborted) {
-        throw new DownloadError(`request timeout after ${opts.timeoutMs}ms: ${opts.url}`, 'timeout');
+        throw new DownloadError(
+          `request timeout after ${opts.timeoutMs}ms: ${opts.url}`,
+          'timeout',
+        );
       }
       if (opts.signal?.aborted) {
         throw new DownloadError('download aborted', 'aborted');

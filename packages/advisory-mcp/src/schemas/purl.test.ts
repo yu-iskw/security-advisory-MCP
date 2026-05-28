@@ -24,7 +24,9 @@ describe('parsePurl', () => {
   });
 
   it('parses qualifiers and subpath', () => {
-    const p = parsePurl('pkg:maven/org.apache.commons/commons-text@1.10.0?type=jar#path/to/Class.java');
+    const p = parsePurl(
+      'pkg:maven/org.apache.commons/commons-text@1.10.0?type=jar#path/to/Class.java',
+    );
     expect(p.type).toBe('maven');
     expect(p.namespace).toBe('org.apache.commons');
     expect(p.name).toBe('commons-text');

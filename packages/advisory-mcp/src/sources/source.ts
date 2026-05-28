@@ -14,12 +14,7 @@
  */
 export type TrustTier = 'A' | 'B' | 'C' | 'D';
 
-export type SyncPreset =
-  | 'core'
-  | 'packages'
-  | 'ecosystems'
-  | 'context'
-  | 'research';
+export type SyncPreset = 'core' | 'packages' | 'ecosystems' | 'context' | 'research';
 
 import type { Downloader } from '../ingest/downloader.js';
 
@@ -106,8 +101,5 @@ export interface SourceAdapter {
   checkForUpdates(ctx: SyncContext): Promise<UpdateCheckResult>;
   fetch(ctx: SyncContext, update: UpdateCheckResult): Promise<FetchResult>;
   parse(ctx: SyncContext, fetched: FetchResult): AsyncIterable<RawSourceRecord>;
-  normalize(
-    ctx: SyncContext,
-    record: RawSourceRecord,
-  ): Promise<NormalizedEvidence[]>;
+  normalize(ctx: SyncContext, record: RawSourceRecord): Promise<NormalizedEvidence[]>;
 }

@@ -1,7 +1,11 @@
 import { z } from 'zod';
 
 import { explainRiskMarkdown } from '../../risk/explain.js';
-import { isRiskProfileName, RISK_PROFILE_NAMES, type RiskProfileName } from '../../risk/profiles.js';
+import {
+  isRiskProfileName,
+  RISK_PROFILE_NAMES,
+  type RiskProfileName,
+} from '../../risk/profiles.js';
 import { scoreRisk } from '../../risk/score.js';
 
 import type { AdvisoryStore } from '../../store/store.js';
@@ -21,8 +25,7 @@ interface ExplainRiskResult {
 }
 
 export function explainRisk(store: AdvisoryStore, input: ExplainRiskInput): ExplainRiskResult {
-  const advisory =
-    store.advisories.findById(input.id) ?? store.advisories.findByAlias(input.id);
+  const advisory = store.advisories.findById(input.id) ?? store.advisories.findByAlias(input.id);
   if (!advisory) {
     return {
       found: false,

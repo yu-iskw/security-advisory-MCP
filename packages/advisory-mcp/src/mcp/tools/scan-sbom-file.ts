@@ -30,9 +30,7 @@ export async function scanSbomFile(
   // eslint-disable-next-line security/detect-non-literal-fs-filename -- path is policy-checked
   const buf = await readFile(resolved);
   if (buf.length > LIMITS.maxSbomJsonBytes) {
-    throw new Error(
-      `SBOM file exceeds ${LIMITS.maxSbomJsonBytes.toString()}-byte limit`,
-    );
+    throw new Error(`SBOM file exceeds ${LIMITS.maxSbomJsonBytes.toString()}-byte limit`);
   }
   return scanSbom(store, {
     sbomJson: buf.toString('utf8'),

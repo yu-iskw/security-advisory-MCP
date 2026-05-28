@@ -64,7 +64,10 @@ describe('CisaVulnrichmentSource', () => {
 
   it('parse decompresses a gzipped tarball and yields one record per CVE JSON', async () => {
     const tar = buildTar([
-      { path: '2024/CVE-2024/CVE-2024-3094.json', content: ENC.encode(JSON.stringify(VULNRICHMENT_RECORD)) },
+      {
+        path: '2024/CVE-2024/CVE-2024-3094.json',
+        content: ENC.encode(JSON.stringify(VULNRICHMENT_RECORD)),
+      },
       { path: 'README.md', content: ENC.encode('# not a cve record') },
     ]);
     const gz = new Uint8Array(gzipSync(Buffer.from(tar)));
@@ -112,7 +115,10 @@ describe('CisaVulnrichmentSource', () => {
   it('skips malformed JSON files in the archive without failing the whole sync', async () => {
     const tar = buildTar([
       { path: '2024/CVE-2024/CVE-2024-3094.json', content: ENC.encode('not json') },
-      { path: '2024/CVE-2024/CVE-2024-3400.json', content: ENC.encode(JSON.stringify(VULNRICHMENT_RECORD)) },
+      {
+        path: '2024/CVE-2024/CVE-2024-3400.json',
+        content: ENC.encode(JSON.stringify(VULNRICHMENT_RECORD)),
+      },
     ]);
     const gz = new Uint8Array(gzipSync(Buffer.from(tar)));
     const s = new CisaVulnrichmentSource();

@@ -22,8 +22,7 @@ import type {
  * left out of normalized JSON to keep the index lean.
  */
 
-const NUCLEI_URL =
-  'https://codeload.github.com/projectdiscovery/nuclei-templates/tar.gz/main';
+const NUCLEI_URL = 'https://codeload.github.com/projectdiscovery/nuclei-templates/tar.gz/main';
 export const NUCLEI_HOST = 'codeload.github.com';
 
 const TEMPLATE_PATH_RE = /\/([\w-]+)\.yaml$/;

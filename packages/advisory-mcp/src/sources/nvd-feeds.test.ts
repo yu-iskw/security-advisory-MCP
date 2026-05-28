@@ -136,7 +136,11 @@ describe('NvdFeedsSource', () => {
     const evidence = await s.normalize(ctx, records[0] ?? { raw: undefined });
     expect(evidence[0]?.evidenceType).toBe('nvd_enrichment');
     expect(evidence[0]?.confidence).toBe(0.8);
-    const normalized = evidence[0]?.normalized as { cwes: string[]; cvss: unknown; provenance: string };
+    const normalized = evidence[0]?.normalized as {
+      cwes: string[];
+      cvss: unknown;
+      provenance: string;
+    };
     expect(normalized.cwes).toEqual(['CWE-506']);
     expect(normalized.provenance).toBe('nvd');
     expect((normalized.cvss as { baseSeverity?: string }).baseSeverity).toBe('CRITICAL');

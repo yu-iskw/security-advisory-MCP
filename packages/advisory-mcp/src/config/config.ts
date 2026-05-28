@@ -25,14 +25,7 @@ const SOURCE_IDS = [
 
 type SourceId = (typeof SOURCE_IDS)[number];
 
-const PRESETS = [
-  'core',
-  'packages',
-  'ecosystems',
-  'context',
-  'all',
-  'research',
-] as const;
+const PRESETS = ['core', 'packages', 'ecosystems', 'context', 'all', 'research'] as const;
 
 const SourceConfigSchema = z.object({
   enabled: z.boolean(),
@@ -100,9 +93,7 @@ interface LoadConfigOptions {
 
 export async function loadConfig(options: LoadConfigOptions = {}): Promise<Config> {
   const paths = defaultPaths();
-  const configPath = options.configPath
-    ? resolvePath(options.configPath)
-    : paths.configPath;
+  const configPath = options.configPath ? resolvePath(options.configPath) : paths.configPath;
 
   let fileContent: string | undefined;
   try {

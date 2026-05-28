@@ -34,7 +34,11 @@ program
 program
   .command('sync')
   .description('Sync advisory sources into the local database')
-  .option('--preset <preset>', 'Source preset (core|packages|ecosystems|context|all|research)', 'core')
+  .option(
+    '--preset <preset>',
+    'Source preset (core|packages|ecosystems|context|all|research)',
+    'core',
+  )
   .option(CONFIG_OPT, CONFIG_DESC)
   .action(async (options: SyncOptions) => {
     await runSync(options);

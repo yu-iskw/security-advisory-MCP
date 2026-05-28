@@ -107,8 +107,7 @@ export class SearchIndex {
       match,
       severity: query.severity ?? null,
       hasFix: query.hasFix === undefined ? null : query.hasFix ? 1 : 0,
-      knownExploited:
-        query.knownExploited === undefined ? null : query.knownExploited ? 1 : 0,
+      knownExploited: query.knownExploited === undefined ? null : query.knownExploited ? 1 : 0,
       limit,
     }) as SearchHit[];
   }

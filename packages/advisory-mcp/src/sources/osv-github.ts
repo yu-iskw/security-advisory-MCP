@@ -21,8 +21,7 @@ import type {
  *
  * One adapter covers both M20 (OSV) and M21 (GHSA): the data is the same.
  */
-const OSV_GITHUB_URL =
-  'https://codeload.github.com/github/advisory-database/tar.gz/main';
+const OSV_GITHUB_URL = 'https://codeload.github.com/github/advisory-database/tar.gz/main';
 export const OSV_GITHUB_HOST = 'codeload.github.com';
 
 const GHSA_FILENAME_RE = /(GHSA-[\w-]+)\.json$/i;
@@ -185,9 +184,7 @@ interface NormalizedAffected {
   versions: ReadonlyArray<string>;
 }
 
-function normalizeAffected(
-  list: ReadonlyArray<OsvAffectedPackage>,
-): NormalizedAffected[] {
+function normalizeAffected(list: ReadonlyArray<OsvAffectedPackage>): NormalizedAffected[] {
   const out: NormalizedAffected[] = [];
   for (const item of list) {
     const pkg = item.package;

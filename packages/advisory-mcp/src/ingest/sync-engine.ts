@@ -210,7 +210,26 @@ export class SyncEngine {
 
   private applyRecord(
     adapter: SourceAdapter,
-    evidences: { id: string; advisoryId: string; evidenceType: string; observedAt?: string; sourceModifiedAt?: string; confidence: number; summary: string; normalized: unknown; advisoryDraft?: { id: string; canonicalId: string; type: string; title?: string; description?: string; publishedAt?: string; modifiedAt?: string; aliases?: string[] } }[],
+    evidences: {
+      id: string;
+      advisoryId: string;
+      evidenceType: string;
+      observedAt?: string;
+      sourceModifiedAt?: string;
+      confidence: number;
+      summary: string;
+      normalized: unknown;
+      advisoryDraft?: {
+        id: string;
+        canonicalId: string;
+        type: string;
+        title?: string;
+        description?: string;
+        publishedAt?: string;
+        modifiedAt?: string;
+        aliases?: string[];
+      };
+    }[],
     fetchedAt: string,
   ): number {
     const indexedAdvisoryIds = new Set<string>();

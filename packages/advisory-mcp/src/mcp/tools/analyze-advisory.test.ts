@@ -59,7 +59,11 @@ describe('analyzeAdvisory', () => {
     expect(r.found).toBe(true);
     expect(r.advisory?.id).toBe('CVE-2024-3094');
     expect(r.advisory?.aliases).toEqual(['GHSA-rxwq-x6h5-x525']);
-    expect(r.knownExploited).toMatchObject({ listed: true, source: 'cisa-kev', dateAdded: '2024-03-29' });
+    expect(r.knownExploited).toMatchObject({
+      listed: true,
+      source: 'cisa-kev',
+      dateAdded: '2024-03-29',
+    });
     expect(r.evidence?.[0]).toMatchObject({ source: 'cisa-kev', type: 'known_exploited' });
     expect(r.freshness?.sources[0]?.source).toBe('cisa-kev');
   });
@@ -106,8 +110,6 @@ describe('analyzeAdvisory', () => {
   });
 
   it('input schema rejects oversized ids', () => {
-    expect(() =>
-      AnalyzeAdvisoryInputSchema.parse({ id: 'x'.repeat(200) }),
-    ).toThrow();
+    expect(() => AnalyzeAdvisoryInputSchema.parse({ id: 'x'.repeat(200) })).toThrow();
   });
 });

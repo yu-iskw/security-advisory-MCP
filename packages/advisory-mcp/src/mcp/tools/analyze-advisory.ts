@@ -54,8 +54,7 @@ export function analyzeAdvisory(
   store: AdvisoryStore,
   input: AnalyzeAdvisoryInput,
 ): AnalyzeAdvisoryResult {
-  const advisory =
-    store.advisories.findById(input.id) ?? store.advisories.findByAlias(input.id);
+  const advisory = store.advisories.findById(input.id) ?? store.advisories.findByAlias(input.id);
 
   if (!advisory) {
     return {
@@ -91,13 +90,11 @@ export function analyzeAdvisory(
       }))
     : undefined;
 
-  const sourceRows = store.sourceState
-    .listAll()
-    .map((s) => ({
-      source: s.source,
-      status: s.status,
-      lastSuccessAt: s.lastSuccessAt,
-    }));
+  const sourceRows = store.sourceState.listAll().map((s) => ({
+    source: s.source,
+    status: s.status,
+    lastSuccessAt: s.lastSuccessAt,
+  }));
 
   const sanitizedTitle = sanitizeText(advisory.title ?? advisory.id, { maxChars: 256 });
   const sanitizedDescription = sanitizeText(advisory.description ?? '');
@@ -155,9 +152,7 @@ function renderMarkdown(args: {
   }
   if (args.knownExploited) {
     if (args.knownExploited.listed) {
-      const when = args.knownExploited.dateAdded
-        ? ` (added ${args.knownExploited.dateAdded})`
-        : '';
+      const when = args.knownExploited.dateAdded ? ` (added ${args.knownExploited.dateAdded})` : '';
       lines.push('', `**Known exploited:** Yes — listed in CISA KEV${when}.`);
     } else {
       lines.push('', `**Known exploited:** Not listed in CISA KEV.`);
@@ -166,9 +161,7 @@ function renderMarkdown(args: {
   if (args.evidence && args.evidence.length > 0) {
     lines.push('', '**Evidence:**');
     for (const e of args.evidence) {
-      lines.push(
-        `- ${e.source} (${e.type}, Tier ${e.trustTier}, conf=${e.confidence.toFixed(2)})`,
-      );
+      lines.push(`- ${e.source} (${e.type}, Tier ${e.trustTier}, conf=${e.confidence.toFixed(2)})`);
     }
   }
   if (args.description.length > 0) {

@@ -6,7 +6,13 @@ import type { AdvisoryStore } from '../../store/store.js';
 
 export const SourceStatusInputSchema = z.object({
   source: z.string().min(1).max(64).optional(),
-  staleAfterHours: z.number().int().min(1).max(24 * 30).default(168).optional(),
+  staleAfterHours: z
+    .number()
+    .int()
+    .min(1)
+    .max(24 * 30)
+    .default(168)
+    .optional(),
 });
 
 type SourceStatusInput = z.infer<typeof SourceStatusInputSchema>;

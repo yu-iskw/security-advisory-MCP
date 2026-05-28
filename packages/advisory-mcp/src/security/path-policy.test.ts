@@ -49,6 +49,8 @@ describe('PathPolicy', () => {
 
   it('rejects parent-traversal even via relative paths', () => {
     const policy = new PathPolicy([root]);
-    expect(() => policy.assertReadable(join(root, '..', 'somewhere-else'))).toThrow(PathPolicyError);
+    expect(() => policy.assertReadable(join(root, '..', 'somewhere-else'))).toThrow(
+      PathPolicyError,
+    );
   });
 });

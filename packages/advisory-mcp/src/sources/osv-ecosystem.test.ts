@@ -4,11 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildTar } from '../../tests/fixtures/tar-builder.js';
 
-import {
-  createGoVulnDbSource,
-  createPypaSource,
-  createRustSecSource,
-} from './osv-ecosystem.js';
+import { createGoVulnDbSource, createPypaSource, createRustSecSource } from './osv-ecosystem.js';
 
 import type { SyncContext } from './source.js';
 import type { Downloader } from '../ingest/downloader.js';

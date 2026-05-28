@@ -48,14 +48,30 @@ describe('sourceStatus', () => {
   });
 
   it('filters by source when provided', () => {
-    store.sourceState.upsert({ source: 'cisa-kev', enabled: true, preset: 'core', status: 'success', lastSuccessAt: new Date().toISOString() });
-    store.sourceState.upsert({ source: 'first-epss', enabled: true, preset: 'core', status: 'never_synced' });
+    store.sourceState.upsert({
+      source: 'cisa-kev',
+      enabled: true,
+      preset: 'core',
+      status: 'success',
+      lastSuccessAt: new Date().toISOString(),
+    });
+    store.sourceState.upsert({
+      source: 'first-epss',
+      enabled: true,
+      preset: 'core',
+      status: 'never_synced',
+    });
     const r = sourceStatus(store, { source: 'first-epss' });
     expect(r.sources.map((s) => s.source)).toEqual(['first-epss']);
   });
 
   it('treats never-synced sources as stale', () => {
-    store.sourceState.upsert({ source: 'first-epss', enabled: true, preset: 'core', status: 'never_synced' });
+    store.sourceState.upsert({
+      source: 'first-epss',
+      enabled: true,
+      preset: 'core',
+      status: 'never_synced',
+    });
     const r = sourceStatus(store, {});
     expect(r.sources[0]?.stale).toBe(true);
     expect(r.sources[0]?.ageHours).toBeNull();

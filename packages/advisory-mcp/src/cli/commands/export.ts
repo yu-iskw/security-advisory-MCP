@@ -17,9 +17,10 @@ export async function runExport(options: ExportOptions): Promise<void> {
   const store = openAdvisoryStore({ path: config.databasePath });
   try {
     const limit = options.limit ?? 0;
-    const sql = limit > 0
-      ? `SELECT id, canonical_id, merged_json FROM advisories LIMIT ${String(limit)}`
-      : `SELECT id, canonical_id, merged_json FROM advisories`;
+    const sql =
+      limit > 0
+        ? `SELECT id, canonical_id, merged_json FROM advisories LIMIT ${String(limit)}`
+        : `SELECT id, canonical_id, merged_json FROM advisories`;
     const rows = store.db.prepare(sql).all() as {
       id: string;
       canonical_id: string;

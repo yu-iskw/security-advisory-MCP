@@ -15,9 +15,7 @@ export interface ServeOptions {
 
 export async function runServe(options: ServeOptions): Promise<void> {
   if (options.transport !== 'stdio' && options.transport !== 'http') {
-    process.stderr.write(
-      `Unsupported transport: ${options.transport}. Supported: stdio, http\n`,
-    );
+    process.stderr.write(`Unsupported transport: ${options.transport}. Supported: stdio, http\n`);
     process.exit(2);
   }
 

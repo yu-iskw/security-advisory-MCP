@@ -40,9 +40,7 @@ describe('security: malicious archives are rejected without DB damage', () => {
   });
 
   it('rejects a tar entry with parent-traversal in its path', async () => {
-    const tar = buildTar([
-      { path: '../etc/passwd', content: ENC.encode('not allowed') },
-    ]);
+    const tar = buildTar([{ path: '../etc/passwd', content: ENC.encode('not allowed') }]);
     const gz = new Uint8Array(gzipSync(Buffer.from(tar)));
     const engine = new SyncEngine({
       db,
@@ -72,7 +70,12 @@ describe('security: malicious archives are rejected without DB damage', () => {
 
   it('does not corrupt the DB when the archive contains both safe and traversal entries', async () => {
     const tar = buildTar([
-      { path: 'safe/CVE-2024-3094.json', content: ENC.encode('{"cveMetadata":{"cveId":"CVE-2024-3094"},"containers":{"adp":[{"providerMetadata":{"shortName":"CISA-ADP"},"title":"safe"}]}}') },
+      {
+        path: 'safe/CVE-2024-3094.json',
+        content: ENC.encode(
+          '{"cveMetadata":{"cveId":"CVE-2024-3094"},"containers":{"adp":[{"providerMetadata":{"shortName":"CISA-ADP"},"title":"safe"}]}}',
+        ),
+      },
       { path: '../etc/passwd', content: ENC.encode('attack') },
     ]);
     const gz = new Uint8Array(gzipSync(Buffer.from(tar)));

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-
 import { CisaKevSource } from './cisa-kev.js';
 
 import type { SyncContext } from './source.js';

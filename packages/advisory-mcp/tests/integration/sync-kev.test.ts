@@ -14,15 +14,22 @@ import { SourceStateRepository } from '../../src/store/repositories/source-state
 import type { Downloader } from '../../src/ingest/downloader.js';
 import type { DatabaseHandle } from '../../src/store/db.js';
 
-const FIXTURE_URL = 'https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json';
+const FIXTURE_URL =
+  'https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json';
 
 async function loadFixtureBody(): Promise<Uint8Array> {
   // eslint-disable-next-line security/detect-non-literal-fs-filename -- known test fixture path
-  const buf = await readFile(fileURLToPath(new URL('../fixtures/cisa-kev-sample.json', import.meta.url)));
+  const buf = await readFile(
+    fileURLToPath(new URL('../fixtures/cisa-kev-sample.json', import.meta.url)),
+  );
   return new Uint8Array(buf);
 }
 
-function fixtureDownloader(body: Uint8Array, etag: string, lastModified: string): {
+function fixtureDownloader(
+  body: Uint8Array,
+  etag: string,
+  lastModified: string,
+): {
   downloader: Downloader;
   calls: { url: string; etag?: string; lastModified?: string }[];
   setNotModified: (v: boolean) => void;

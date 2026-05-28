@@ -61,10 +61,7 @@ export class PathPolicy {
         return resolved;
       }
     }
-    throw new PathPolicyError(
-      `path ${candidate} is outside the configured roots`,
-      'outside_roots',
-    );
+    throw new PathPolicyError(`path ${candidate} is outside the configured roots`, 'outside_roots');
   }
 }
 

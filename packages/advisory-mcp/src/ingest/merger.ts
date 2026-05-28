@@ -115,11 +115,7 @@ function indexOrLast(source: string): number {
   return idx === -1 ? SOURCE_PRIORITY.length : idx;
 }
 
-function applyRow(
-  row: EvidenceRowForMerge,
-  ctx: MergeContext,
-  merged: MergedAdvisory,
-): void {
+function applyRow(row: EvidenceRowForMerge, ctx: MergeContext, merged: MergedAdvisory): void {
   const normalized = safeParse(row.normalizedJson);
   const provenance = typeof normalized.provenance === 'string' ? normalized.provenance : undefined;
   ctx.perSource[row.source] = { evidenceType: row.evidenceType, provenance };
@@ -265,8 +261,11 @@ function extractCvss(normalized: Record<string, unknown>): MergedCvss | undefine
   const direct = normalized.cvss;
   if (isCvssObject(direct)) return normalizeCvss(direct);
   // Some sources nest CVSS under metric blobs keyed by version, e.g. cvssV3_1.
-  const candidate = Object.values(normalized).find((v) =>
-    typeof v === 'object' && v !== null && Object.keys(v).some((k) => k.toLowerCase().startsWith('cvssv')),
+  const candidate = Object.values(normalized).find(
+    (v) =>
+      typeof v === 'object' &&
+      v !== null &&
+      Object.keys(v).some((k) => k.toLowerCase().startsWith('cvssv')),
   );
   if (candidate && typeof candidate === 'object') {
     const inner = Object.values(candidate as Record<string, unknown>).find(isCvssObject);
@@ -295,9 +294,7 @@ function normalizeCvss(raw: Record<string, unknown>): MergedCvss {
 function safeParse(json: string): Record<string, unknown> {
   try {
     const parsed = JSON.parse(json) as unknown;
-    return typeof parsed === 'object' && parsed !== null
-      ? (parsed as Record<string, unknown>)
-      : {};
+    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
   } catch {
     return {};
   }

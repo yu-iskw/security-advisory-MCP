@@ -32,9 +32,7 @@ describe('readTar', () => {
   });
 
   it('rejects path traversal entries', () => {
-    const tar = buildTar([
-      { path: '../etc/passwd', content: ENC.encode('boom') },
-    ]);
+    const tar = buildTar([{ path: '../etc/passwd', content: ENC.encode('boom') }]);
     expect(() => readTar(tar)).toThrow(/path traversal/);
   });
 

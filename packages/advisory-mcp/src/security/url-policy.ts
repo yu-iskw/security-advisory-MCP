@@ -48,10 +48,7 @@ export class UrlPolicy {
   private readonly permitPrivate: boolean;
 
   constructor(options: UrlPolicyOptions = {}) {
-    this.allowedHosts = new Set([
-      ...DEFAULT_ALLOWED_HOSTS,
-      ...(options.allowedHosts ?? []),
-    ]);
+    this.allowedHosts = new Set([...DEFAULT_ALLOWED_HOSTS, ...(options.allowedHosts ?? [])]);
     this.resolver =
       options.resolver ??
       (async (host) => {
@@ -78,10 +75,7 @@ export class UrlPolicy {
 
     const host = url.hostname.toLowerCase();
     if (!this.allowedHosts.has(host)) {
-      throw new UrlPolicyError(
-        `host not on allowlist: ${host}`,
-        'host_not_allowed',
-      );
+      throw new UrlPolicyError(`host not on allowlist: ${host}`, 'host_not_allowed');
     }
 
     const ipsToCheck = isIP(host) ? [host] : await this.resolver(host);

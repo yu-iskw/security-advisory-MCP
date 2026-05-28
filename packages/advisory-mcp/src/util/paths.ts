@@ -30,15 +30,11 @@ export function defaultPaths(home: string = homedir()): DefaultPaths {
   const isLinux = platform() === 'linux';
 
   const appDir =
-    isLinux && xdgConfig
-      ? join(xdgConfig, APP_DIR_NAME)
-      : join(home, `.${APP_DIR_NAME}`);
+    isLinux && xdgConfig ? join(xdgConfig, APP_DIR_NAME) : join(home, `.${APP_DIR_NAME}`);
 
-  const dataDir =
-    isLinux && xdgData ? join(xdgData, APP_DIR_NAME) : appDir;
+  const dataDir = isLinux && xdgData ? join(xdgData, APP_DIR_NAME) : appDir;
 
-  const cacheDir =
-    isLinux && xdgCache ? join(xdgCache, APP_DIR_NAME) : join(appDir, 'cache');
+  const cacheDir = isLinux && xdgCache ? join(xdgCache, APP_DIR_NAME) : join(appDir, 'cache');
 
   return {
     appDir,

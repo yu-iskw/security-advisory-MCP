@@ -111,9 +111,9 @@ export class SourceStateRepository {
   }
 
   findBySource(source: string): SourceStateRow | undefined {
-    const row = this.db
-      .prepare('SELECT * FROM source_state WHERE source = ?')
-      .get(source) as DbSourceStateRow | undefined;
+    const row = this.db.prepare('SELECT * FROM source_state WHERE source = ?').get(source) as
+      | DbSourceStateRow
+      | undefined;
     return row ? rowFromDb(row) : undefined;
   }
 

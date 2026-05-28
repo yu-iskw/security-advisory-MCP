@@ -29,11 +29,7 @@ export function createLogger(options: LoggerOptions = {}): Logger {
   const baseFields = options.baseFields ?? {};
   const now = options.now ?? (() => new Date());
 
-  function emit(
-    recordLevel: LogLevel,
-    event: string,
-    fields?: Record<string, unknown>,
-  ): void {
+  function emit(recordLevel: LogLevel, event: string, fields?: Record<string, unknown>): void {
     // Both lookups use values constrained to the LogLevel union.
     // eslint-disable-next-line security/detect-object-injection
     if (LEVEL_RANK[recordLevel] < LEVEL_RANK[level]) return;

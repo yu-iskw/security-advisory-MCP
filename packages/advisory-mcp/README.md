@@ -68,30 +68,30 @@ Stateless POST endpoint; every request creates a fresh MCP server + transport.
 
 ## MCP surface
 
-| Kind     | Name                          | Purpose |
-|----------|-------------------------------|---------|
-| Tool     | `ping`                        | Health check |
-| Tool     | `analyze_advisory`            | Look up a CVE / GHSA / OSV ID with merged evidence |
-| Tool     | `search_advisories`           | FTS5 search over the local index |
-| Tool     | `source_status`               | Sync freshness per source |
-| Tool     | `explain_risk`                | Profile-aware risk score with per-driver attribution |
-| Tool     | `analyze_package`             | PURL-aware vulnerable + malicious package check |
-| Tool     | `scan_sbom`                   | CycloneDX or SPDX JSON SBOM scan |
-| Tool     | `scan_sbom_file`              | SBOM from disk (opt-in via `sbomRoots`) |
-| Tool     | `prioritize`                  | Rank advisories + packages by risk |
-| Resource | `advisory://id/{id}`          | Advisory by canonical or alias ID |
-| Resource | `advisory://cve/{cveId}`      | CVE-scoped lookup |
-| Resource | `advisory://ghsa/{ghsaId}`    | GHSA-scoped lookup |
-| Resource | `advisory://osv/{osvId}`      | OSV/ecosystem-scoped lookup |
-| Resource | `advisory://package/{purl}`   | Package summary |
-| Resource | `advisory://source/status`    | Source freshness JSON |
-| Resource | `advisory://risk-profile/{name}` | Profile weights |
-| Resource | `advisory://schema/advisory`  | Inline JSON Schema |
-| Resource | `advisory://schema/evidence`  | Inline JSON Schema |
-| Prompt   | `triage-advisory`             | Analyst-grade triage workflow |
-| Prompt   | `patch-brief`                 | Audience-targeted remediation brief |
-| Prompt   | `risk-acceptance-draft`       | Risk acceptance memo |
-| Prompt   | `sbom-risk-review`            | SBOM scan review |
+| Kind     | Name                             | Purpose                                              |
+| -------- | -------------------------------- | ---------------------------------------------------- |
+| Tool     | `ping`                           | Health check                                         |
+| Tool     | `analyze_advisory`               | Look up a CVE / GHSA / OSV ID with merged evidence   |
+| Tool     | `search_advisories`              | FTS5 search over the local index                     |
+| Tool     | `source_status`                  | Sync freshness per source                            |
+| Tool     | `explain_risk`                   | Profile-aware risk score with per-driver attribution |
+| Tool     | `analyze_package`                | PURL-aware vulnerable + malicious package check      |
+| Tool     | `scan_sbom`                      | CycloneDX or SPDX JSON SBOM scan                     |
+| Tool     | `scan_sbom_file`                 | SBOM from disk (opt-in via `sbomRoots`)              |
+| Tool     | `prioritize`                     | Rank advisories + packages by risk                   |
+| Resource | `advisory://id/{id}`             | Advisory by canonical or alias ID                    |
+| Resource | `advisory://cve/{cveId}`         | CVE-scoped lookup                                    |
+| Resource | `advisory://ghsa/{ghsaId}`       | GHSA-scoped lookup                                   |
+| Resource | `advisory://osv/{osvId}`         | OSV/ecosystem-scoped lookup                          |
+| Resource | `advisory://package/{purl}`      | Package summary                                      |
+| Resource | `advisory://source/status`       | Source freshness JSON                                |
+| Resource | `advisory://risk-profile/{name}` | Profile weights                                      |
+| Resource | `advisory://schema/advisory`     | Inline JSON Schema                                   |
+| Resource | `advisory://schema/evidence`     | Inline JSON Schema                                   |
+| Prompt   | `triage-advisory`                | Analyst-grade triage workflow                        |
+| Prompt   | `patch-brief`                    | Audience-targeted remediation brief                  |
+| Prompt   | `risk-acceptance-draft`          | Risk acceptance memo                                 |
+| Prompt   | `sbom-risk-review`               | SBOM scan review                                     |
 
 ## Source policy
 
@@ -133,22 +133,22 @@ templates or downloads exploit payloads.
 Default path: `~/.advisory-mcp/config.json`. Override with
 `advisory-mcp <cmd> --config <path>` or environment variables:
 
-| Variable                          | Purpose                       |
-|-----------------------------------|-------------------------------|
-| `ADVISORY_MCP_DATABASE_PATH`      | Override the DB path          |
-| `ADVISORY_MCP_CACHE_PATH`         | Override the cache path       |
-| `ADVISORY_MCP_LOG_LEVEL`          | `debug` / `info` / `warn` / `error` |
+| Variable                     | Purpose                             |
+| ---------------------------- | ----------------------------------- |
+| `ADVISORY_MCP_DATABASE_PATH` | Override the DB path                |
+| `ADVISORY_MCP_CACHE_PATH`    | Override the cache path             |
+| `ADVISORY_MCP_LOG_LEVEL`     | `debug` / `info` / `warn` / `error` |
 
 Notable config fields:
 
-| Field             | Purpose                                                       |
-|-------------------|---------------------------------------------------------------|
-| `databasePath`    | Where the SQLite store lives                                  |
-| `cachePath`       | Where downloaded source archives are cached                   |
-| `defaultPreset`   | Preset for ad-hoc syncs                                       |
-| `sources`         | Per-source `{enabled: bool}` map                              |
-| `sbomRoots`       | Approved directories for `scan_sbom_file` (empty = disabled)  |
-| `auditLogPath`    | JSONL audit log path (empty = audit logging disabled)         |
+| Field           | Purpose                                                      |
+| --------------- | ------------------------------------------------------------ |
+| `databasePath`  | Where the SQLite store lives                                 |
+| `cachePath`     | Where downloaded source archives are cached                  |
+| `defaultPreset` | Preset for ad-hoc syncs                                      |
+| `sources`       | Per-source `{enabled: bool}` map                             |
+| `sbomRoots`     | Approved directories for `scan_sbom_file` (empty = disabled) |
+| `auditLogPath`  | JSONL audit log path (empty = audit logging disabled)        |
 
 ## Limitations
 
